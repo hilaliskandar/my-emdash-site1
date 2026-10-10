@@ -1,3 +1,4 @@
+import { RADAR_BATCH } from "./radar-batch-data";
 import { PILOT_INPUTS } from "./radar-pilots";
 import handler, { createScheduledHandler, PluginBridge } from "@emdash-cms/cloudflare/worker";
 
@@ -126,9 +127,55 @@ async function pilotDraftImport(request: Request, env: RadarEnv, ctx: ExecutionC
   return new Response(JSON.stringify({status:"created_as_draft",slug,apiStatus:res.status,id:record?.data?.id ?? record?.data?.item?.id ?? null}),{headers});
 }
 
+
+function draftBlocksFromSource(text: string) {
+  // Preserve the exact supplied wording, with one block per nonempty line or paragraph.
+  const chunks = text.replace(/\r\n/g, "\n").split(/\n\s*\n|\n(?=[^\n])/).map(x=>x.trim()).filter(Boolean);
+  return chunks.map((chunk,i) => ({
+    _type:"block", _key:"archive"+String(i).padStart(4,"0"), style:"normal", markDefs:[],
+    children:[{_type:"span",_key:"s"+i,marks:[],text:chunk}]
+  }));
+}
+
+async function radarArchiveImport(request: Request, env: RadarEnv, ctx: ExecutionContext): Promise<Response> {
+  const headers={"Content-Type":"application/json; charset=utf-8","Cache-Control":"no-store"};
+  const url = new URL(request.url);
+  if (request.method==="GET" && request.headers.get("accept")?.includes("text/html")) {
+    const html=`<!doctype html><html lang="pt-BR"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Acervo dos radares</title><style>body{max-width:840px;margin:40px auto;font:16px/1.5 system-ui;padding:20px;color:#243a43}button{padding:12px 20px}pre{white-space:pre-wrap;background:#eee;padding:14px}</style><h1>Importação de 27 edições do acervo</h1><p>As edições serão importadas exclusivamente como <strong>rascunhos</strong>, sem publicação. O procedimento importa cinco edições por operação, com verificação de duplicações.</p><label>Lote: <select id="batch"><option value="0">1 — edições 1 a 5</option><option value="1">2 — edições 6 a 10</option><option value="2">3 — edições 11 a 15</option><option value="3">4 — edições 16 a 20</option><option value="4">5 — edições 21 a 25</option><option value="5">6 — edições 26 a 27</option></select></label><p><button onclick="run()">Criar rascunhos do lote selecionado</button></p><pre id="result">Aguardando execução.</pre><script>async function run(){if(!confirm('Criar somente rascunhos deste lote?'))return;const o=document.getElementById('result');o.textContent='Importando...';try{const r=await fetch(location.pathname,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({batch:Number(document.getElementById('batch').value),confirm:'IMPORTAR_RASCUNHOS'})});o.textContent=JSON.stringify(await r.json(),null,2)}catch(e){o.textContent=String(e)}}</script></html>`;
+    return new Response(html,{headers:{"Content-Type":"text/html; charset=utf-8","Cache-Control":"no-store","Content-Security-Policy":"default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; connect-src 'self'; frame-ancestors 'none'"}});
+  }
+  if(request.method==="GET")return new Response(JSON.stringify({available:RADAR_BATCH.map((x,i)=>({i,radar:x.radar,date:x.date})),draftOnly:true}),{headers});
+  if(request.method!=="POST")return new Response(null,{status:405,headers});
+  if(request.headers.get("origin")!==url.origin)return new Response(JSON.stringify({error:"origin_mismatch"}),{status:403,headers});
+  if(!env.EMDASH_API_TOKEN)return new Response(JSON.stringify({error:"missing_token"}),{status:503,headers});
+  let input:{batch?:number,confirm?:string};
+  try{input=await request.json() as typeof input}catch{return new Response(JSON.stringify({error:"invalid_json"}),{status:400,headers})}
+  if(input.confirm!=="IMPORTAR_RASCUNHOS"||!Number.isInteger(input.batch)||input.batch!<0||input.batch!>5)return new Response(JSON.stringify({error:"invalid_batch_or_confirmation"}),{status:400,headers});
+  const selected=RADAR_BATCH.slice(input.batch!*5,input.batch!*5+5);
+  const auth={Authorization:`Bearer ${env.EMDASH_API_TOKEN.trim()}`,Accept:"application/json"};
+  const out=[];
+  for(const item of selected){
+    const slug="radar-"+item.radar+"-"+item.date+"-arquivo";
+    const get=await handler.fetch(new Request(new URL("/_emdash/api/content/posts?limit=100",url),{headers:auth}),env as never,ctx);
+    if(!get.ok){out.push({slug,status:"list_error",http:get.status});break}
+    const result=await get.json() as any;
+    const records=result?.data?.items??result?.data?.entries??result?.data?.content??[];
+    if(!Array.isArray(records)){out.push({slug,status:"unexpected_listing"});break}
+    if(records.some((r:any)=>r.slug===slug)){out.push({slug,status:"already_exists"});continue}
+    const title=(item.radar==="normativo"?"Radar Normativo Urbano":"Radar Imobiliário Metropolitano")+" — "+item.date.split("-").reverse().join("/");
+    const description=item.text.replace(/\r\n/g,"\n").split("\n").map(x=>x.trim()).filter(Boolean).slice(0,3).join(" ").slice(0,500);
+    const body={slug,status:"draft",locale:"pt-BR",publishedAt:item.date+"T12:00:00-03:00",data:{title,excerpt:description,content:draftBlocksFromSource(item.text)},taxonomies:{category:[item.category_slug]}};
+    const create=await handler.fetch(new Request(new URL("/_emdash/api/content/posts",url),{method:"POST",headers:{...auth,"Content-Type":"application/json"},body:JSON.stringify(body)}),env as never,ctx);
+    out.push({slug,status:create.ok?"created_draft":"api_error",http:create.status});
+    if(!create.ok)break;
+  }
+  return new Response(JSON.stringify({batch:input.batch,results:out,allDrafts:true}),{headers});
+}
+
 export default {
   ...handler,
   async fetch(request: Request, env: RadarEnv, ctx: ExecutionContext) {
+    if (new URL(request.url).pathname === "/_emdash/import-archive") return radarArchiveImport(request, env, ctx);
     if (new URL(request.url).pathname === "/_emdash/import-pilots") return pilotDraftImport(request, env, ctx);
     if (new URL(request.url).pathname === "/_emdash/import-schema") return importSchemaProbe(request, env, ctx);
     if (new URL(request.url).pathname === "/_emdash/import-readiness") {
