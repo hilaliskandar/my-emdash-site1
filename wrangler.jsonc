@@ -1,25 +1,24 @@
 {
 	"$schema": "node_modules/wrangler/config-schema.json",
 	"name": "my-emdash-site1",
+	"workers_dev": true,
+	"preview_urls": false,
 	"main": "./src/worker.ts",
 	"compatibility_date": "2026-02-24",
 	"compatibility_flags": ["nodejs_compat"],
 	"d1_databases": [
 		{
 			"binding": "DB",
-			"database_name": "my-emdash-site","database_id": "6acdfa80-2401-4416-94d4-d232ad3d45ad",
+			"database_name": "radares-emdash-db-teste","database_id": "e9475d93-aaae-4a6e-9004-024e1ca44266",
 		},
 	],
 	"r2_buckets": [
 		{
 			"binding": "MEDIA",
-			"bucket_name": "my-emdash-media","preview_bucket_name": "my-emdash-media",
+			"bucket_name": "radares-emdash-media-teste","preview_bucket_name": "radares-emdash-media-teste",
 		},
 	],
 	// Sandboxed plugins require Worker Loader, available on Workers paid plans. Uncomment to enable:
 	// "worker_loaders": [{ "binding": "LOADER" }],
-	// General maintenance cron trigger
-	"triggers": {
-		"crons": ["* * * * *"],
-	},
+	// Scheduled trigger disabled: account cron slots are full.
 }
