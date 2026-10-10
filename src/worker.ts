@@ -39,9 +39,34 @@ async function radarImportProbe(request: Request, env: RadarEnv, ctx: ExecutionC
   }
 }
 
+async function importSchemaProbe(request: Request, env: RadarEnv, ctx: ExecutionContext): Promise<Response> {
+  const headers = { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store" };
+  if (request.method !== "GET") return new Response(null, { status: 405, headers });
+  if (!env.EMDASH_API_TOKEN) return new Response(JSON.stringify({error:"missing_secret"}),{status:503,headers});
+  const paths = ["/_emdash/api/schema/collections/posts/fields", "/_emdash/api/openapi.json", "/_emdash/api/taxonomies/category/terms"];
+  const out: Record<string, unknown> = {};
+  for (const path of paths) {
+    try {
+      const api = await handler.fetch(new Request(new URL(path, request.url), {
+        headers: { Authorization: `Bearer ${env.EMDASH_API_TOKEN.trim()}`, Accept: "application/json" }
+      }), env as never, ctx);
+      const data = await api.json() as Record<string, any>;
+      if (path.includes("openapi")) {
+        const op = data?.paths?.["/_emdash/api/content/{collection}"]?.post;
+        const terms = data?.paths?.["/_emdash/api/content/{collection}/{id}/terms/{taxonomy}"]?.post;
+        out.openapi = { status: api.status, createContent: op?.requestBody?.content?.["application/json"]?.schema, setTerms: terms?.requestBody?.content?.["application/json"]?.schema, schemas: Object.fromEntries(Object.entries(data?.components?.schemas ?? {}).filter(([key])=>/createcontent|contentcreate|setcontentterm/i.test(key))) };
+      } else {
+        out[path] = {status: api.status, data};
+      }
+    } catch { out[path] = {error: "request_failed"}; }
+  }
+  return new Response(JSON.stringify(out), {headers});
+}
+
 export default {
   ...handler,
   async fetch(request: Request, env: RadarEnv, ctx: ExecutionContext) {
+    if (new URL(request.url).pathname === "/_emdash/import-schema") return importSchemaProbe(request, env, ctx);
     if (new URL(request.url).pathname === "/_emdash/import-readiness") {
       return radarImportProbe(request, env, ctx);
     }
