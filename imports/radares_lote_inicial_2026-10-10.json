@@ -11,11 +11,12 @@
       "drive_id": "1hiyzPskLYtOkKgOvbX_kmYM7R10ad0sw-Onnq7B4NlI",
       "source_url": "https://docs.google.com/document/d/1hiyzPskLYtOkKgOvbX_kmYM7R10ad0sw-Onnq7B4NlI/edit?usp=drivesdk",
       "category_slug": "radar-imobiliario-metropolitano",
-      "status": "texto_preparado_aguarda_credencial",
-      "link_check": "referencias_sem_url_completa",
-      "editorial_check": "conteudo_transcrito_nao_validado",
-      "emdash_status": "nao_importado",
-      "import_file": "imports/pilotos/imobiliario-2026-10-05.md"
+      "status": "importado_com_links_em_rascunho",
+      "link_check": "2_links_associados_aos_blocos",
+      "editorial_check": "pendente_validacao_valores_leilao_e_revisao_visual",
+      "emdash_status": "draft_verificado",
+      "import_file": "imports/pilotos/imobiliario-2026-10-05.md",
+      "emdash_slug": "radar-imobiliario-2026-10-05-piloto"
     },
     {
       "radar": "imobiliario",
@@ -192,11 +193,12 @@
       "drive_id": "1vdvSRqN5Z4k2I6AYPBayc1jQcnPB1XyGBrPbF4XhyJE",
       "source_url": "https://docs.google.com/document/d/1vdvSRqN5Z4k2I6AYPBayc1jQcnPB1XyGBrPbF4XhyJE/edit?usp=drivesdk",
       "category_slug": "radar-normativo-urbano",
-      "status": "texto_preparado_aguarda_credencial",
-      "link_check": "dois_links_presentes_nao_verificados",
-      "editorial_check": "conteudo_transcrito_nao_validado",
-      "emdash_status": "nao_importado",
-      "import_file": "imports/pilotos/normativo-2026-10-05.md"
+      "status": "importado_com_links_em_rascunho",
+      "link_check": "2_links_associados_aos_blocos",
+      "editorial_check": "pendente_revisao_visual",
+      "emdash_status": "draft_verificado",
+      "import_file": "imports/pilotos/normativo-2026-10-05.md",
+      "emdash_slug": "radar-normativo-2026-10-05-piloto"
     },
     {
       "radar": "normativo",
