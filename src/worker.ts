@@ -17,10 +17,12 @@ async function radarImportProbe(request: Request, env: RadarEnv, ctx: ExecutionC
   if (request.method !== "GET") return new Response(null, { status: 405, headers });
   const token = env.EMDASH_API_TOKEN;
   if (!token) return new Response(JSON.stringify({ ready: false, reason: "missing_secret" }), { status: 503, headers });
+  const normalizedToken = token.trim();
+  const tokenShape = { hasExpectedPrefix: normalizedToken.startsWith("ec_pat_"), surroundingWhitespace: token !== normalizedToken, plausibleLength: normalizedToken.length >= 25 }; 
   const testUrl = new URL("/_emdash/api/schema/collections", request.url);
   const probe = new Request(testUrl, {
     method: "GET",
-    headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
+    headers: { Authorization: `Bearer ${normalizedToken}`, Accept: "application/json" },
   });
   try {
     // Dispatch internally instead of making a network request through Access.
@@ -28,7 +30,9 @@ async function radarImportProbe(request: Request, env: RadarEnv, ctx: ExecutionC
     return new Response(JSON.stringify({
       ready: response.ok,
       apiStatus: response.status,
-      tokenConfigured: true
+      tokenConfigured: true,
+      tokenShape,
+      diagnosis: response.status === 401 ? "credential_rejected_or_endpoint_auth" : response.status === 403 ? "permission_denied" : response.ok ? "authenticated" : "unexpected_api_status"
     }), { status: response.ok ? 200 : 503, headers });
   } catch {
     return new Response(JSON.stringify({ ready: false, reason: "internal_api_failure" }), { status: 503, headers });
