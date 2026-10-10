@@ -20,16 +20,33 @@ if (!term) {
 }
 
 const cursor = Astro.url.searchParams.get("cursor") || undefined;
-const {
-	entries: posts,
-	cacheHint,
-	nextCursor,
-} = await getEmDashCollection("posts", {
+const categoryResult = await getEmDashCollection("posts", {
 	where: { category: term.slug },
 	orderBy: { published_at: "desc" },
 	limit: 20,
 	cursor,
 });
+
+// Some imported EmDash posts are published but not returned by the category
+// filter. Keep the normal query, and recover the known Radar editorial series
+// from their stable slugs if the category archive unexpectedly comes back empty.
+const editorialPrefix =
+	term.slug === "radar-normativo-urbano" ? "radar-normativo-" :
+	term.slug === "radar-imobiliario-metropolitano" ? "radar-imobiliario-" :
+	null;
+let posts = categoryResult.entries;
+let cacheHint = categoryResult.cacheHint;
+let nextCursor = categoryResult.nextCursor;
+if (posts.length === 0 && editorialPrefix) {
+	const recovered = await getEmDashCollection("posts", {
+		orderBy: { published_at: "desc" },
+		limit: 100,
+		cursor,
+	});
+	posts = recovered.entries.filter((entry) => entry.id.startsWith(editorialPrefix));
+	cacheHint = recovered.cacheHint;
+	nextCursor = recovered.nextCursor;
+}
 
 if (Astro.cache?.enabled) {
 	Astro.cache.set(termsResult.cacheHint);
