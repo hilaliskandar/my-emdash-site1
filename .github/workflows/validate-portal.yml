@@ -1,0 +1,29 @@
+name: Verificacao do portal
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [fix/portal-ptbr-interface-20261016]
+
+permissions:
+  contents: read
+
+jobs:
+  validar:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Obter codigo
+        uses: actions/checkout@v4
+      - name: Preparar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Ativar pnpm
+        run: corepack enable && corepack prepare pnpm@11.9.0 --activate
+      - name: Instalar dependencias
+        run: pnpm install --no-frozen-lockfile
+      - name: Validar tipos e componentes Astro
+        run: pnpm typecheck
+      - name: Gerar versao de teste sem implantar
+        run: pnpm build
