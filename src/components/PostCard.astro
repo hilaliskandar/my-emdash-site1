@@ -26,6 +26,14 @@ const {
 	edit,
 } = Astro.props;
 
+const radarSeries = href.includes("radar-normativo-")
+  ? { label: "RADAR NORMATIVO", kind: "normativo" }
+  : href.includes("radar-imobiliario-")
+    ? { label: "RADAR IMOBILIÁRIO", kind: "imobiliario" }
+    : href.includes("radar-contratacoes-")
+      ? { label: "RADAR DE CONTRATAÇÕES", kind: "contratacoes" }
+      : null;
+
 const formattedDate = date
 	? date.toLocaleDateString("pt-BR", {
 			year: "numeric",
@@ -43,7 +51,9 @@ const formattedDate = date
 					<Image image={featuredImage} />
 				</div>
 			) : (
-				<div class="card-placeholder" />
+				<div class:list={["card-placeholder", radarSeries && `radar-${radarSeries.kind}`]}>
+					{radarSeries && <span class="radar-placeholder-label">{radarSeries.label}</span>}
+				</div>
 			)
 		}
 		<div class="card-body">
@@ -146,6 +156,19 @@ const formattedDate = date
 		margin-bottom: var(--spacing-4);
 	}
 
+	.card-placeholder:has(.radar-placeholder-label) {
+		display: flex;
+		align-items: flex-end;
+		padding: var(--spacing-6);
+		background: linear-gradient(130deg, var(--color-surface) 10%, var(--color-border) 100%);
+		border: 1px solid var(--color-border);
+	}
+	.radar-placeholder-label {
+		font-size: var(--font-size-sm);
+		font-weight: 700;
+		letter-spacing: 0.08em;
+		color: var(--color-text);
+	}
 	.card-body {
 		flex: 1;
 	}
