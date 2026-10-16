@@ -25,7 +25,7 @@ for (const row of rows) {
     if (prefix !== 'puxadinho' && slug?.startsWith(prefix)) required = category;
   }
   if (!required) continue;
-  const categories = typeof row.categories === 'string' ? row.categories.split('|') : row.categories ?? [];
+  const categories = typeof row.categories === 'string' ? row.categories.split(',') : row.categories ?? [];
   if (!categories.includes(required)) {
     failures++;
     console.error('SEM CATEGORIA: ' + slug + ' => ' + required);
