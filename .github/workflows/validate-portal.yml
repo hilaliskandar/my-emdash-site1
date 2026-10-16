@@ -25,5 +25,7 @@ jobs:
         run: pnpm install --no-frozen-lockfile
       - name: Validar tipos e componentes Astro
         run: pnpm typecheck
+      - name: Testar auditoria de categorias
+        run: node scripts/test-audit-categories.mjs
       - name: Gerar versao de teste sem implantar
         run: pnpm build
