@@ -130,7 +130,10 @@ const isLoggedIn = !!Astro.locals.user;
 						resultsClass="site-search-results"
 						resultClass="site-search-result"
 						collections={["posts", "pages"]}
-					/>
+				>
+					<div slot="loading" class="emdash-live-search-loading">Pesquisando...</div>
+					<div slot="no-results" class="emdash-live-search-no-results">Nenhum resultado encontrado.</div>
+				</LiveSearch>
 					<div class="nav-links">
 						{
 							menu?.items.map((item) => (
