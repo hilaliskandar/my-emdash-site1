@@ -15,8 +15,12 @@ if (source < 0 || !process.argv[source + 1]) {
   process.exit(2);
 }
 const raw = JSON.parse(readFileSync(process.argv[source + 1], 'utf8'));
-const rows = Array.isArray(raw) ? raw : raw.results?.[0]?.results ?? raw.result?.[0]?.results ?? raw.results;
-if (!Array.isArray(rows)) throw new Error('Resposta de consulta D1 desconhecida');
+const rows = Array.isArray(raw)
+  ? (raw[0]?.results && Array.isArray(raw[0].results) ? raw.flatMap(item => item.results ?? []) : raw)
+  : (raw.result?.[0]?.results ?? raw.results?.[0]?.results ?? raw.results);
+if (!Array.isArray(rows) || rows.length === 0 || rows.some(row => typeof row.slug !== 'string' || !('categories' in row))) {
+  throw new Error('Consulta vazia ou resposta D1 fora do formato esperado');
+}
 let failures = 0;
 for (const row of rows) {
   const slug = row.slug;
