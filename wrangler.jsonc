@@ -18,7 +18,7 @@
 			"bucket_name": "radares-emdash-media-teste","preview_bucket_name": "radares-emdash-media-teste",
 		},
 	],
-	// Sandboxed plugins require Worker Loader, available on Workers paid plans. Uncomment to enable:
-	// "worker_loaders": [{ "binding": "LOADER" }],
+	// Requires Cloudflare Workers Paid for sandboxed EmDash plugins.
+	"worker_loaders": [{ "binding": "LOADER" }],
 	// Scheduled trigger disabled: account cron slots are full.
 }
