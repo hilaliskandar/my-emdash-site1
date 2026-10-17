@@ -6,6 +6,7 @@ export { PluginBridge };
 
 interface RadarEnv {
   EMDASH_API_TOKEN?: string;
+  DB: D1Database;
 }
 
 /**
@@ -172,9 +173,35 @@ async function radarArchiveImport(request: Request, env: RadarEnv, ctx: Executio
   return new Response(JSON.stringify({batch:input.batch,results:out,allDrafts:true}),{headers});
 }
 
+/** Aggregate-only view counter: does not persist IP addresses or cookies. */
+async function recordArticleView(request: Request, env: RadarEnv): Promise<Response> {
+  const headers = { "Cache-Control": "no-store", "Content-Type": "application/json; charset=utf-8" };
+  if (request.method !== "POST") return new Response(null, { status: 405, headers });
+  const url = new URL(request.url);
+  if (request.headers.get("Origin") !== url.origin || request.headers.get("Sec-Fetch-Site") === "cross-site") {
+    return new Response(null, { status: 403, headers });
+  }
+  let body: { slug?: unknown };
+  try { body = await request.json() as { slug?: unknown }; }
+  catch { return new Response(null, { status: 400, headers }); }
+  const slug = body.slug;
+  if (typeof slug !== "string" || !/^[a-z0-9][a-z0-9-]{2,160}$/.test(slug)) {
+    return new Response(null, { status: 400, headers });
+  }
+  try {
+    const post = await env.DB.prepare("SELECT id FROM ec_posts WHERE slug=? AND status='published' AND deleted_at IS NULL LIMIT 1").bind(slug).first<{ id: string }>();
+    if (!post) return new Response(null, { status: 404, headers });
+    const day = new Date().toISOString().slice(0, 10);
+    await env.DB.prepare("INSERT INTO radar_article_views (entry_id, day, views) VALUES (?, ?, 1) ON CONFLICT(entry_id, day) DO UPDATE SET views = views + 1").bind(post.id, day).run();
+    return new Response(JSON.stringify({ recorded: true }), { status: 202, headers });
+  } catch {
+    return new Response(JSON.stringify({ recorded: false }), { status: 503, headers });
+  }
+}
 export default {
   ...handler,
   async fetch(request: Request, env: RadarEnv, ctx: ExecutionContext) {
+    if (new URL(request.url).pathname === "/_analytics/view") return recordArticleView(request, env);
     if (new URL(request.url).pathname === "/_emdash/import-archive") return radarArchiveImport(request, env, ctx);
     if (new URL(request.url).pathname === "/_emdash/import-pilots") return pilotDraftImport(request, env, ctx);
     if (new URL(request.url).pathname === "/_emdash/import-schema") return importSchemaProbe(request, env, ctx);
