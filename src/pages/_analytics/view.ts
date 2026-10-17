@@ -24,7 +24,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
     return new Response(null, { status: 400, headers });
   }
   try {
-    const db = locals.runtime.env.DB;
+    const db = (locals as typeof locals & { runtime: { env: { DB: D1Database } } }).runtime.env.DB;
     const post = await db.prepare(
       "SELECT id FROM ec_posts WHERE slug=? AND status='published' AND deleted_at IS NULL LIMIT 1",
     ).bind(slug).first<{ id: string }>();
