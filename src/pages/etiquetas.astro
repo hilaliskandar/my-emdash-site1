@@ -49,7 +49,7 @@ const groups = [...new Set(terms.map(t=>t.group))]
   const root = document.getElementById("tag-directory");
   if (root) {
     const input = root.querySelector<HTMLInputElement>("#tag-search");
-    const select = root.querySelector<HTMLSelectElement>("#tag-filter");
+    const select = root.querySelector<HTMLInputElement>("#tag-filter");
     const items = [...root.querySelectorAll<HTMLLIElement>(".terms li")];
     const count = root.querySelector<HTMLElement>("#tag-count");
     const empty = root.querySelector<HTMLElement>("#tag-empty");
