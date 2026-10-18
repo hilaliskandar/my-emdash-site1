@@ -50,12 +50,14 @@ function getImageUrl(img: unknown): string | undefined {
 	return undefined;
 }
 const featuredImageUrl = getImageUrl(post.data.featured_image);
-const { siteTitle } = resolveBlogSiteIdentity(await getSiteSettings());
+const siteSettings = await getSiteSettings();
+const { siteTitle } = resolveBlogSiteIdentity(siteSettings);
 
 // Generate SEO meta from content
 const seo = getSeoMeta(post, {
 	siteTitle,
-	siteUrl: Astro.url.origin,
+	siteUrl: siteSettings.url || Astro.url.origin,
+	titleSeparator: siteSettings.seo?.titleSeparator,
 	path: Astro.url.pathname.replace(/\/$/, ""),
 	defaultOgImage: featuredImageUrl,
 });
