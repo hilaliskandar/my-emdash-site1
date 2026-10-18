@@ -57,10 +57,10 @@ const instance = "radar-tag-cloud-" + Math.random().toString(36).slice(2);
     <div class="tag-cloud-words" aria-label="Tags por frequência">
       {terms.map((t) => {
         const weight = max <= 1 ? 0.5 : Math.log(1 + t.count) / Math.log(1 + max);
-        const fontSize = (0.83 + 0.72 * weight).toFixed(2);
+        // Expand the range so the difference between frequent and rare tags remains legible.\n        const fontSize = (0.78 + 1.32 * Math.pow(weight, 1.15)).toFixed(2);
         return (
           <a href={`/tag/${encodeURIComponent(t.slug)}`} class="tag-word"
-             data-group={t.group} style={`--tag-size: ${fontSize}rem`}
+             data-group={t.group} style={`font-size: ${fontSize}rem; --tag-size: ${fontSize}rem`}
              title={`${t.label}: ${t.count} ${t.count === 1 ? "artigo" : "artigos"}`}>
              {t.label}<span class="sr-only"> ({t.count} artigos)</span>
           </a>
@@ -95,7 +95,7 @@ const instance = "radar-tag-cloud-" + Math.random().toString(36).slice(2);
   .tag-filter { border: 1px solid var(--color-border); padding: .28rem .55rem; border-radius: 999px; background: transparent; color: var(--color-text-secondary); font-size: .76rem; cursor: pointer; }
   .tag-filter:hover, .tag-filter:focus-visible, .tag-filter.active { background: var(--color-border); color: var(--color-text); }
   .tag-cloud-words { display: flex; flex-wrap: wrap; gap: .55rem .75rem; align-items: baseline; line-height: 1.5; }
-  .tag-word { font-size: var(--tag-size); color: var(--color-text-secondary); text-decoration: none; font-weight: 600; }
+  .tag-word { font-size: var(--tag-size); line-height: 1.35; display: inline-block; color: var(--color-text-secondary); text-decoration: none; font-weight: 600; }
   .tag-word:hover, .tag-word:focus-visible { color: var(--color-brand); text-decoration: underline; }
   .tag-word[hidden] { display: none !important; }
   .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
