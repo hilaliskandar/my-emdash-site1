@@ -37,7 +37,7 @@ const puxadinhoDaSemana = recentEditions.find((entry) => entry.id.startsWith("pu
 const editorialLanes = [
   { label: "Radar Normativo", number: "01", slug: "radar-normativo-", archive: "/category/radar-normativo-urbano", kind: "Regulação urbana" },
   { label: "Radar Imobiliário", number: "02", slug: "radar-imobiliario-", archive: "/category/radar-imobiliario-metropolitano", kind: "Mercado e investimentos" },
-  { label: "Radar de Contratações", number: "03", slug: "radar-contratacoes-", archive: "/category/radar-de-contratacoes", kind: "Editais e oportunidades" },
+  { label: "Radar de Contratações", number: "03", slug: "radar-contratacoes-", archive: "/category/radar-contratacoes-urbanisticas", kind: "Editais e oportunidades" },
 ].map((lane) => ({ ...lane, latest: recentEditions.find((post) => post.id.startsWith(lane.slug)) }));
 const latestAcervo = recentEditions.slice(0, 3);
 
