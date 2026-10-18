@@ -22,12 +22,18 @@ if (!term) {
 // Imported tag relations are not always returned by the EmDash taxonomy
 // "where" filter. Walk the published collection with real cursors instead of
 // truncating the archive at its 100 newest posts. Keep the tag lookup batched.
-const allPosts: Awaited<ReturnType<typeof getEmDashCollection>>["entries"] = [];
-const cacheHints: Awaited<ReturnType<typeof getEmDashCollection>>["cacheHint"][] = [];
+const firstPage = await getEmDashCollection("posts", {
+  locale: "pt-BR",
+  status: "published",
+  orderBy: { published_at: "desc" },
+  limit: 100,
+});
+const allPosts = [...firstPage.entries];
+const cacheHints = [firstPage.cacheHint];
 const seenCursors = new Set<string>();
-let nextCollectionCursor: string | undefined;
-let fullyScanned = false;
-for (let batch = 0; batch < 100; batch++) {
+let nextCollectionCursor: string | undefined = firstPage.nextCursor;
+let fullyScanned = !nextCollectionCursor;
+for (let batch = 1; nextCollectionCursor && batch < 100; batch++) {
   const result = await getEmDashCollection("posts", {
     locale: "pt-BR",
     status: "published",
