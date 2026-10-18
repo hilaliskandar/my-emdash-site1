@@ -1,36 +1,22 @@
 ---
-import { getEmDashCollection, getTermsForEntries } from "emdash";
+import { getTaxonomyTermsWithCacheHint } from "emdash";
 
 interface Props { title?: string; maxTerms?: number }
 const { title = "Nuvem de assuntos", maxTerms = 36 } = Astro.props;
-// One bounded collection read and one batched taxonomy read, not one query per tag.
-// When the acervo exceeds 100 entries, replace with a paginated aggregation.
-const { entries, cacheHint } = await getEmDashCollection("posts", {
-  locale: "pt-BR",
-  orderBy: { published_at: "desc" },
-  limit: 100,
-});
-if (Astro.cache?.enabled) Astro.cache.set(cacheHint);
-const ids = entries.map((entry) => entry.data.id);
-const byEntry = ids.length ? await getTermsForEntries("posts", ids, "tag") : new Map();
-const frequencies = new Map<string, { slug: string; label: string; count: number; group: string }>();
-for (const id of ids) {
-  const seen = new Set<string>();
-  for (const tag of byEntry.get(id) ?? []) {
-    if (seen.has(tag.slug)) continue;
-    seen.add(tag.slug);
-    const previous = frequencies.get(tag.slug);
-    if (previous) previous.count += 1;
-    else frequencies.set(tag.slug, {
-      slug: tag.slug,
-      label: tag.label,
-      count: 1,
-      group: tag.slug.split(":", 1)[0] || "outros",
-    });
-  }
-}
-const terms = [...frequencies.values()]
-  .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label, "pt-BR"))
+// Read native taxonomy terms directly. The previous association-based lookup
+// returned an empty cloud in production despite populated D1 tag relations.
+const result = await getTaxonomyTermsWithCacheHint("tag", { includeCounts: true });
+if (Astro.cache?.enabled) Astro.cache.set(result.cacheHint);
+const terms = result.data.map((tag) => {
+  const withCounts = tag as unknown as { count?: number; entryCount?: number; postsCount?: number };
+  const count = Number(withCounts.count ?? withCounts.entryCount ?? withCounts.postsCount ?? 1);
+  return {
+    slug: tag.slug,
+    label: tag.label,
+    count: Number.isFinite(count) && count > 0 ? count : 1,
+    group: tag.slug.split(":", 1)[0] || "outros",
+  };
+}).sort((a, b) => b.count - a.count || a.label.localeCompare(b.label, "pt-BR"))
   .slice(0, Math.max(1, Math.min(maxTerms, 100)));
 const max = Math.max(1, ...terms.map((t) => t.count));
 const groups = [
@@ -43,7 +29,7 @@ const groups = [
   { key: "orgao-publico", label: "Órgãos" },
 ];
 const available = groups.filter((g) => g.key === "all" || terms.some((t) => t.group === g.key));
-const instance = "radar-tag-cloud-" + Math.random().toString(36).slice(2);
+const instance = "radar-tag-cloud";
 ---
 {terms.length > 0 && (
   <section class="tag-cloud" aria-label={title} id={instance}>
@@ -62,8 +48,8 @@ const instance = "radar-tag-cloud-" + Math.random().toString(36).slice(2);
         return (
           <a href={`/tag/${encodeURIComponent(t.slug)}`} class="tag-word"
              data-group={t.group} style={`font-size: ${fontSize}rem; --tag-size: ${fontSize}rem`}
-             title={`${t.label}: ${t.count} ${t.count === 1 ? "artigo" : "artigos"}`}>
-             {t.label}<span class="sr-only"> ({t.count} artigos)</span>
+             title={t.label}>
+             {t.label}
           </a>
         );
       })}
