@@ -99,9 +99,8 @@ function formatDate(date: Date | null | undefined) {
         </article>
       ) : (
         <div class="weekly-feature-reserved">
-          <span class="story-category">Análises semanais</span>
-          <p>Espaço editorial reservado às análises da semana. A próxima publicação aparecerá aqui automaticamente.</p>
-          <a href="/category/estudos-e-analises">Explorar estudos e análises <span aria-hidden="true">→</span></a>
+          <p>Em breve, novas análises semanais.</p>
+          <a href="/category/estudos-e-analises">Consultar estudos e análises <span aria-hidden="true">→</span></a>
         </div>
       )}
     </section>
@@ -180,7 +179,7 @@ function formatDate(date: Date | null | undefined) {
   .puxadinho-lead-image :global(img) {display:block;width:100%;height:auto;aspect-ratio:4/3;object-fit:cover;}
   .editorial-empty {padding:2rem 0;color:var(--color-muted);}
   /* Secondary featured story: below the lead essay, above the Radar columns. */
-  .weekly-feature {padding:0 0 clamp(2rem,3.6vw,3rem);}
+  .weekly-feature {padding:0 0 clamp(1.5rem,2.8vw,2.5rem);}
   .weekly-feature-content {display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr);gap:clamp(1.5rem,3vw,3rem);align-items:center;padding:1.4rem 0;}
   .weekly-feature-copy h3 {font-family:var(--font-heading);font-size:clamp(1.6rem,2.8vw,2.35rem);font-weight:600;line-height:1.2;letter-spacing:-.015em;max-width:27ch;overflow-wrap:break-word;}
   .weekly-feature-copy h3 a {color:var(--color-text);text-decoration:none;}
@@ -188,11 +187,11 @@ function formatDate(date: Date | null | undefined) {
   .weekly-feature-deck {font-size:1.02rem;line-height:1.55;color:var(--color-text-secondary);margin-top:.85rem;max-width:62ch;}
   .weekly-feature-image {display:block;min-width:0;overflow:hidden;}
   .weekly-feature-image :global(img) {width:100%;height:auto;aspect-ratio:16/10;object-fit:cover;}
-  .weekly-feature-reserved {padding:1.45rem 1.6rem;background:var(--color-bg-subtle);border-left:2px solid var(--color-border);}
+  .weekly-feature-reserved {display:flex;align-items:baseline;flex-wrap:wrap;gap:.5rem 1.5rem;padding:.85rem 1rem;background:var(--color-bg-subtle);border-left:2px solid var(--color-border);}
   .weekly-feature-reserved .story-category {margin-bottom:.35rem;}
-  .weekly-feature-reserved p {font-size:1rem;line-height:1.55;color:var(--color-text-secondary);max-width:68ch;margin-bottom:.7rem;}
+  .weekly-feature-reserved p {font-size:.9rem;line-height:1.5;color:var(--color-text-secondary);margin:0;}
   .weekly-feature-reserved a {font-size:.9rem;font-weight:600;text-underline-offset:.2em;}
-  @media(max-width:720px){.weekly-feature-content{grid-template-columns:1fr}.weekly-feature-image{max-width:540px}.weekly-feature-reserved{padding:1.2rem}}
+  @media(max-width:720px){.weekly-feature-content{grid-template-columns:1fr}.weekly-feature-image{max-width:540px}.weekly-feature-reserved{padding:.8rem 1rem}.weekly-feature{padding-bottom:1.5rem}}
   .radar-top-row {margin-top:.4rem;}
   .radar-top-grid {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));border-bottom:1px solid var(--color-border);}
   .radar-top-card {padding:1.65rem clamp(1rem,2.1vw,2rem) 2rem;min-width:0;display:flex;flex-direction:column;align-items:flex-start;}
@@ -218,6 +217,6 @@ function formatDate(date: Date | null | undefined) {
   .editorial-latest-item time {display:block;font-size:.78rem;color:var(--color-muted);margin-top:.65rem;}
   @media (max-width:900px) {.puxadinho-lead-grid{grid-template-columns:minmax(0,5fr) minmax(0,3fr);gap:2rem}.radar-top-card{padding-inline:1rem}.radar-top-card h3{font-size:1.35rem}}
   @media (max-width:720px) {.editorial-masthead span:last-child{display:none}.puxadinho-lead-grid{grid-template-columns:1fr;gap:1.4rem}.puxadinho-headline{max-width:22ch}.puxadinho-lead-image{max-width:600px}.radar-top-grid{grid-template-columns:1fr}.radar-top-card,.radar-top-card:first-child,.radar-top-card:last-child{padding:1.4rem 0}.radar-top-card + .radar-top-card{border-left:0;border-top:1px solid var(--color-border)}.editorial-discovery{grid-template-columns:1fr;gap:1.1rem}.editorial-latest-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
-  @media (max-width:480px) {.editorial-home{padding-inline:var(--spacing-4)}.puxadinho-headline{font-size:clamp(2.15rem,9vw,2.75rem)}.editorial-latest-grid{grid-template-columns:1fr}.section-eyebrow{align-items:flex-start}.radar-top-card p{-webkit-line-clamp:3}}
+  @media (max-width:480px) {.editorial-home{padding-inline:var(--spacing-4)}.puxadinho-headline{font-size:clamp(2.15rem,9vw,2.75rem)}.editorial-latest-grid{grid-template-columns:1fr}.section-eyebrow{align-items:flex-start;gap:.5rem;padding-bottom:.75rem}.section-eyebrow h2,.section-eyebrow > span:first-child{line-height:1.45}.radar-top-card h3{margin:.7rem 0}.radar-top-card p{-webkit-line-clamp:3}}
 
 </style>
