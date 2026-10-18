@@ -57,7 +57,8 @@ const instance = "radar-tag-cloud-" + Math.random().toString(36).slice(2);
     <div class="tag-cloud-words" aria-label="Tags por frequência">
       {terms.map((t) => {
         const weight = max <= 1 ? 0.5 : Math.log(1 + t.count) / Math.log(1 + max);
-        // Expand the range so the difference between frequent and rare tags remains legible.\n        const fontSize = (0.78 + 1.32 * Math.pow(weight, 1.15)).toFixed(2);
+        // Expand the range so the difference between frequent and rare tags remains legible.
+        const fontSize = (0.78 + 1.32 * Math.pow(weight, 1.15)).toFixed(2);
         return (
           <a href={`/tag/${encodeURIComponent(t.slug)}`} class="tag-word"
              data-group={t.group} style={`font-size: ${fontSize}rem; --tag-size: ${fontSize}rem`}
