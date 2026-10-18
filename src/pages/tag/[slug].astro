@@ -19,29 +19,52 @@ if (!term) {
 	return Astro.redirect("/404");
 }
 
-// EmDash's taxonomy "where" filter currently returns no posts for imported
-// tag assignments. Use the same bounded collection and batched tag query that
-// powers the editorial taxonomy; avoid N+1 reads.
-const { entries: recentPosts, cacheHint } = await getEmDashCollection("posts", {
-  locale: "pt-BR",
-  status: "published",
-  orderBy: { published_at: "desc" },
-  limit: 100,
-});
+// Imported tag relations are not always returned by the EmDash taxonomy
+// "where" filter. Walk the published collection with real cursors instead of
+// truncating the archive at its 100 newest posts. Keep the tag lookup batched.
+const allPosts: Awaited<ReturnType<typeof getEmDashCollection>>["entries"] = [];
+const cacheHints: Awaited<ReturnType<typeof getEmDashCollection>>["cacheHint"][] = [];
+const seenCursors = new Set<string>();
+let nextCollectionCursor: string | undefined;
+let fullyScanned = false;
+for (let batch = 0; batch < 100; batch++) {
+  const result = await getEmDashCollection("posts", {
+    locale: "pt-BR",
+    status: "published",
+    orderBy: { published_at: "desc" },
+    limit: 100,
+    cursor: nextCollectionCursor,
+  });
+  allPosts.push(...result.entries);
+  cacheHints.push(result.cacheHint);
+  if (!result.nextCursor) {
+    fullyScanned = true;
+    break;
+  }
+  if (seenCursors.has(result.nextCursor)) {
+    throw new Error("Cursor repetido ao consultar o acervo de etiquetas.");
+  }
+  seenCursors.add(result.nextCursor);
+  nextCollectionCursor = result.nextCursor;
+}
+if (!fullyScanned) {
+  throw new Error("O acervo de etiquetas excedeu o limite de segurança da consulta.");
+}
 const tagsByEntry = await getTermsForEntries(
   "posts",
-  recentPosts.map((post) => post.data.id),
+  allPosts.map((post) => post.data.id),
   "tag",
 );
-const matchingPosts = recentPosts
-  .filter((post) => (tagsByEntry.get(post.data.id) ?? []).some((tag) => tag.slug === term.slug));
+const matchingPosts = allPosts.filter((post) =>
+  (tagsByEntry.get(post.data.id) ?? []).some((tag) => tag.slug === term.slug),
+);
 const pageNumber = Math.max(1, Math.min(1000, Number.parseInt(Astro.url.searchParams.get("pagina") || "1", 10) || 1));
 const pageSize = 20;
 const totalPages = Math.ceil(matchingPosts.length / pageSize);
 const posts = matchingPosts.slice((pageNumber - 1) * pageSize, pageNumber * pageSize);
 if (Astro.cache?.enabled) {
   Astro.cache.set(termsResult.cacheHint);
-  Astro.cache.set(cacheHint);
+  for (const hint of cacheHints) Astro.cache.set(hint);
 }
 const filteredPosts = posts.map((post) => ({
   post,
