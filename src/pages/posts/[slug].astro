@@ -11,6 +11,7 @@ import { Image, PortableText, WidgetArea } from "emdash/ui";
 import { Comments, CommentForm } from "emdash/ui/comments";
 import Base from "../../layouts/Base.astro";
 import PostCard from "../../components/PostCard.astro";
+import TagCloud from "../../components/TagCloud.astro";
 import { getReadingTime } from "../../utils/reading-time";
 import { resolveBlogSiteIdentity } from "../../utils/site-identity";
 
@@ -249,6 +250,7 @@ const publishDate =
 						</div>
 					</nav>
 					<div class="sidebar-widgets">
+						<TagCloud title="Explore por assunto e localidade" maxTerms={36} />
 						<WidgetArea name="sidebar" />
 					</div>
 				</div>
