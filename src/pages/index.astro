@@ -39,7 +39,7 @@ const editorialLanes = [
   { label: "Radar Imobiliário", number: "02", slug: "radar-imobiliario-", archive: "/category/radar-imobiliario-metropolitano", kind: "Mercado e investimentos" },
   { label: "Radar de Contratações", number: "03", slug: "radar-contratacoes-", archive: "/category/radar-contratacoes-urbanisticas", kind: "Editais e oportunidades" },
 ].map((lane) => ({ ...lane, latest: recentEditions.find((post) => post.id.startsWith(lane.slug)) }));
-const latestAcervo = recentEditions.slice(0, 3);
+
 
 if (Astro.cache?.enabled) {
 	Astro.cache.set(cacheHint);
@@ -97,163 +97,134 @@ function formatDate(date: Date | null | undefined) {
 ---
 
 <Base title={siteTitle} description={siteTagline} canonical={new URL("/", Astro.url).href}>
-  <section class="editorial-home" aria-label="Destaques editoriais">
-    <div class="editorial-masthead">
-      <span>RADAR REGULATÓRIO / EDIÇÃO DIGITAL</span>
-      <span>Urbanismo · Legislação · Mercado · Contratações</span>
+  <div class="editorial-home">
+    <div class="editorial-masthead" aria-label="Perfil editorial">
+      <span>RADAR REGULATÓRIO · EDIÇÃO DIGITAL</span>
+      <span>Urbanismo / Legislação / Mercado / Contratações</span>
     </div>
-    <section class="puxadinho-lead" aria-labelledby="puxadinho-title">
-      <div class="section-eyebrow"><span>ENSAIO DA SEMANA</span><a href="/category/puxadinho">O Puxadinho — Arquivo ↗</a></div>
+
+    <section class="puxadinho-lead" aria-labelledby="puxadinho-heading">
+      <div class="section-eyebrow">
+        <h2 id="puxadinho-heading">O Puxadinho · Artigo da semana</h2>
+        <a href="/category/puxadinho">Todos os ensaios <span aria-hidden="true">↗</span></a>
+      </div>
       {puxadinhoDaSemana ? (
-        <div class="puxadinho-lead-grid">
+        <article class="puxadinho-lead-grid">
           <div class="puxadinho-lead-text">
-            <span class="story-category">PERSPECTIVA URBANA</span>
-            <h1 id="puxadinho-title"><a href={`/posts/${puxadinhoDaSemana.id}`}>{puxadinhoDaSemana.data.title}</a></h1>
-            {puxadinhoDaSemana.data.excerpt && <p>{puxadinhoDaSemana.data.excerpt}</p>}
-            <div class="lead-bottom"><time>{formatDate(puxadinhoDaSemana.data.publishedAt)}</time><a href={`/posts/${puxadinhoDaSemana.id}`}>Ler o artigo completo →</a></div>
+            <span class="story-category">Análise e perspectiva urbana</span>
+            <h3 class="puxadinho-headline"><a href={`/posts/${puxadinhoDaSemana.id}`}>{puxadinhoDaSemana.data.title}</a></h3>
+            {puxadinhoDaSemana.data.excerpt && <p class="puxadinho-deck">{puxadinhoDaSemana.data.excerpt}</p>}
+            <div class="lead-bottom">
+              {puxadinhoDaSemana.data.publishedAt && <time datetime={puxadinhoDaSemana.data.publishedAt.toISOString()}>{formatDate(puxadinhoDaSemana.data.publishedAt)}</time>}
+              <a href={`/posts/${puxadinhoDaSemana.id}`}>Ler artigo completo <span aria-hidden="true">→</span></a>
+            </div>
           </div>
-          {puxadinhoDaSemana.data.featured_image && <a href={`/posts/${puxadinhoDaSemana.id}`} class="puxadinho-lead-image" aria-label="Ler o artigo da semana"><Image image={puxadinhoDaSemana.data.featured_image}/></a>}
-        </div>
-      ) : <p id="puxadinho-title">O próximo artigo de O Puxadinho será publicado aqui.</p>}
+          {puxadinhoDaSemana.data.featured_image && (
+            <a href={`/posts/${puxadinhoDaSemana.id}`} class="puxadinho-lead-image" aria-label={`Ler ${puxadinhoDaSemana.data.title}`}>
+              <Image image={puxadinhoDaSemana.data.featured_image} />
+            </a>
+          )}
+        </article>
+      ) : (
+        <p class="editorial-empty">O próximo artigo de O Puxadinho será apresentado neste espaço.</p>
+      )}
     </section>
+
     <section class="radar-top-row" aria-labelledby="radar-top-heading">
-      <div class="section-eyebrow"><h2 id="radar-top-heading">ÚLTIMAS EDIÇÕES DOS RADARES</h2><span>Monitoramento contínuo</span></div>
+      <div class="section-eyebrow">
+        <h2 id="radar-top-heading">Últimas edições dos radares</h2>
+        <span>Monitoramento urbano e regulatório</span>
+      </div>
       <div class="radar-top-grid">
         {editorialLanes.map((lane) => (
           <article class="radar-top-card">
-            <div class="lane-topline"><span>{lane.number} / {lane.kind}</span><a href={lane.archive}>Arquivo ↗</a></div>
+            <div class="lane-topline"><span>{lane.number} / {lane.kind}</span><a href={lane.archive}>Arquivo <span aria-hidden="true">↗</span></a></div>
             <h3>{lane.label}</h3>
             {lane.latest ? (
               <>
-                <time>{formatDate(lane.latest.data.publishedAt)}</time>
+                {lane.latest.data.publishedAt && <time datetime={lane.latest.data.publishedAt.toISOString()}>{formatDate(lane.latest.data.publishedAt)}</time>}
                 <h4><a href={`/posts/${lane.latest.id}`}>{lane.latest.data.title}</a></h4>
                 {lane.latest.data.excerpt && <p>{lane.latest.data.excerpt}</p>}
-                <a class="radar-top-read" href={`/posts/${lane.latest.id}`}>Consultar edição →</a>
+                <a class="radar-top-read" href={`/posts/${lane.latest.id}`}>Consultar edição <span aria-hidden="true">→</span></a>
               </>
             ) : <p>Nenhuma edição publicada nesta editoria.</p>}
           </article>
         ))}
       </div>
     </section>
-    <section class="editorial-discovery" aria-label="Explorar o acervo">
-      <div><span class="story-category">PESQUISA E ARQUIVO</span><h2>Inteligência urbana, organizada para consulta.</h2><p>Pesquise legislação, acontecimentos, municípios, empresas e assuntos por meio das etiquetas editoriais.</p></div>
-      <div class="discovery-links"><a href="/etiquetas">Explorar todas as etiquetas →</a><a href="/posts">Consultar o acervo completo →</a></div>
+
+    <section class="editorial-discovery" aria-labelledby="discovery-heading">
+      <div><span class="story-category">Pesquisa e arquivo</span><h2 id="discovery-heading">Informação organizada para consulta.</h2><p>Explore a produção por assunto, município, empresa e órgão público, ou pesquise todas as edições.</p></div>
+      <div class="discovery-links"><a href="/etiquetas">Explorar etiquetas <span aria-hidden="true">→</span></a><a href="/posts">Acervo completo <span aria-hidden="true">→</span></a></div>
     </section>
-  </section>
 
-	{
-		posts.length === 0 ? (
-			<section class="empty-state">
-				<h2>As edições estão sendo preparadas</h2>
-				<p>Em breve, as publicações dos dois radares estarão disponíveis neste espaço.</p>
-			</section>
-		) : (
-			<div class="home-content">
-				{/* Featured Post - Side by side */}
-				{featuredPost && (
-					<section class="featured-section">
-						<div class="featured-grid">
-							<a href={`/posts/${featuredPost.id}`} class="featured-image-link">
-								<div class="featured-image" {...featuredPost.edit.featured_image}>
-									<Image image={featuredPost.data.featured_image} />
-								</div>
-							</a>
-							<div class="featured-content">
-								<div class="featured-meta">
-									{featuredBylines.length > 0 && (
-										<>
-											<div class="featured-bylines">
-												{featuredBylines.slice(0, 2).map((credit, index) => (
-													<>
-														{index > 0 && <span class="byline-sep">,</span>}
-														<span class="featured-byline">
-															{credit.byline.avatarMediaId && (
-																<img
-																	src={`/_emdash/api/media/file/${credit.byline.avatarMediaId}`}
-																	alt={credit.byline.displayName}
-																	class="featured-byline-avatar"
-																/>
-															)}
-															<span class="featured-byline-name">
-																{credit.byline.displayName}
-															</span>
-														</span>
-													</>
-												))}
-												{featuredBylines.length > 2 && (
-													<span class="byline-more">
-														+{featuredBylines.length - 2}
-													</span>
-												)}
-											</div>
-											<span class="meta-dot" />
-										</>
-									)}
-									{formatDate(featuredPost.data.publishedAt) && (
-										<time>{formatDate(featuredPost.data.publishedAt)}</time>
-									)}
-									<span class="meta-dot" />
-									<span>
-										{getReadingTime(featuredPost.data.content)} min de leitura
-									</span>
-								</div>
-								<a
-									href={`/posts/${featuredPost.id}`}
-									class="featured-title-link"
-								>
-									<h1 class="featured-title" {...featuredPost.edit.title}>{featuredPost.data.title}</h1>
-								</a>
-								{featuredPost.data.excerpt && (
-									<p class="featured-excerpt" {...featuredPost.edit.excerpt}>{featuredPost.data.excerpt}</p>
-								)}
-								{featuredTags.length > 0 && (
-									<div class="featured-tags">
-										{featuredTags.map((tag) => (
-											<a href={`/tag/${tag.slug}`} class="featured-tag">
-												{tag.label}
-											</a>
-										))}
-									</div>
-								)}
-							</div>
-						</div>
-					</section>
-				)}
-
-				{/* Latest Posts */}
-				{gridPostsWithTags.length > 0 && (
-					<section class="posts-section">
-						<header class="section-header">
-							<h2 class="section-title">Últimas edições</h2>
-							{hasMorePosts && (
-								<a href="/posts" class="section-link">
-									View all
-								</a>
-							)}
-						</header>
-						<div class="posts-grid">
-							{gridPostsWithTags.map(({ post, tags, bylines }) => (
-								<PostCard
-									title={post.data.title ?? "Untitled"}
-									excerpt={post.data.excerpt}
-									featuredImage={post.data.featured_image}
-									href={`/posts/${post.id}`}
-									date={post.data.publishedAt ?? undefined}
-									readingTime={getReadingTime(post.data.content)}
-									tags={tags}
-									bylines={bylines}
-									edit={post.edit}
-								/>
-							))}
-						</div>
-					</section>
-				)}
-			</div>
-		)
-	}
+    {gridPostsWithTags.length > 0 && (
+      <section class="editorial-latest" aria-labelledby="editorial-latest-heading">
+        <div class="section-eyebrow">
+          <h2 id="editorial-latest-heading">Outras publicações recentes</h2>
+          <a href="/posts">Ver todas <span aria-hidden="true">↗</span></a>
+        </div>
+        <div class="editorial-latest-grid">
+          {gridPostsWithTags.map(({ post }) => (
+            <article class="editorial-latest-item">
+              <h3><a href={`/posts/${post.id}`}>{post.data.title}</a></h3>
+              {post.data.publishedAt && <time datetime={post.data.publishedAt.toISOString()}>{formatDate(post.data.publishedAt)}</time>}
+            </article>
+          ))}
+        </div>
+      </section>
+    )}
+  </div>
 </Base>
-
 <style>
+  /* Editorial cover, deliberately restrained: rules and whitespace replace tiles. */
+  .editorial-home {max-width:var(--wide-width);margin-inline:auto;padding:0 var(--spacing-6) var(--spacing-16);}
+  .editorial-masthead {display:flex;justify-content:space-between;gap:1.5rem;padding:1.05rem 0;border-bottom:1px solid var(--color-border);color:var(--color-muted);font-size:.75rem;letter-spacing:.065em;}
+  .editorial-masthead span:first-child {font-weight:700;color:var(--color-brand);}
+  .section-eyebrow {display:flex;align-items:baseline;justify-content:space-between;gap:1rem;flex-wrap:wrap;padding:0 0 .85rem;border-bottom:2px solid var(--color-text);}
+  .section-eyebrow h2 {font-family:var(--font-body);font-size:.82rem;letter-spacing:.055em;font-weight:700;line-height:1.5;text-transform:none;}
+  .section-eyebrow span,.section-eyebrow a {color:var(--color-muted);font-size:.82rem;}
+  .section-eyebrow a:hover {color:var(--color-brand);text-decoration:underline;text-underline-offset:.2em;}
+  .puxadinho-lead {padding-top:clamp(1.65rem,3.5vw,3rem);}
+  .puxadinho-lead-grid {display:grid;grid-template-columns:minmax(0,7fr) minmax(0,5fr);gap:clamp(2rem,4vw,4.5rem);padding:clamp(1.3rem,2.6vw,2.4rem) 0 clamp(2.1rem,4vw,3.6rem);align-items:center;}
+  .puxadinho-lead-text {min-width:0;}
+  .story-category {font-family:var(--font-body);display:block;color:var(--color-brand);font-size:.78rem;font-weight:650;letter-spacing:.045em;margin-bottom:1rem;}
+  .puxadinho-headline {font-family:var(--font-heading);font-size:clamp(2.4rem,4.4vw,4rem);font-weight:600;line-height:1.08;letter-spacing:-.025em;overflow-wrap:break-word;max-width:16ch;}
+  .puxadinho-headline a,.radar-top-card h4 a,.editorial-latest-item h3 a {text-decoration:none;color:var(--color-text);}
+  .puxadinho-headline a:hover,.radar-top-card h4 a:hover,.editorial-latest-item h3 a:hover {color:var(--color-brand);text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:.12em;}
+  .puxadinho-deck {max-width:62ch;margin-top:1.3rem;font-size:clamp(1.06rem,1.5vw,1.23rem);line-height:1.55;color:var(--color-text-secondary);}
+  .lead-bottom {margin-top:1.45rem;display:flex;gap:.6rem 1.5rem;flex-wrap:wrap;align-items:baseline;font-size:.9rem;}
+  .lead-bottom time {color:var(--color-muted);}
+  .lead-bottom a,.radar-top-read {font-weight:650;text-underline-offset:.2em;}
+  .puxadinho-lead-image {display:block;min-width:0;overflow:hidden;}
+  .puxadinho-lead-image :global(img) {display:block;width:100%;height:auto;aspect-ratio:4/3;object-fit:cover;}
+  .editorial-empty {padding:2rem 0;color:var(--color-muted);}
+  .radar-top-row {margin-top:.4rem;}
+  .radar-top-grid {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));border-bottom:1px solid var(--color-border);}
+  .radar-top-card {padding:1.65rem clamp(1rem,2.1vw,2rem) 2rem;min-width:0;display:flex;flex-direction:column;align-items:flex-start;}
+  .radar-top-card:first-child {padding-left:0;}
+  .radar-top-card:last-child {padding-right:0;}
+  .radar-top-card + .radar-top-card {border-left:1px solid var(--color-border);}
+  .lane-topline {display:flex;justify-content:space-between;align-items:baseline;gap:.5rem;width:100%;font-size:.74rem;line-height:1.4;color:var(--color-muted);}
+  .lane-topline a {color:var(--color-brand);white-space:nowrap;}
+  .radar-top-card h3 {font-size:clamp(1.32rem,2vw,1.6rem);font-weight:600;line-height:1.2;margin:.95rem 0 .8rem;}
+  .radar-top-card time {font-size:.8rem;color:var(--color-muted);margin-bottom:.7rem;}
+  .radar-top-card h4 {font-family:var(--font-heading);font-size:clamp(1.2rem,1.75vw,1.42rem);line-height:1.26;font-weight:600;overflow-wrap:break-word;}
+  .radar-top-card p {color:var(--color-text-secondary);font-size:.95rem;line-height:1.55;margin:.85rem 0 1.2rem;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden;}
+  .radar-top-read {margin-top:auto;padding-top:.85rem;font-size:.88rem;}
+  .editorial-discovery {display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr);gap:2rem;border-bottom:1px solid var(--color-border);padding:clamp(2rem,4vw,3.5rem) 0;}
+  .editorial-discovery h2 {font-size:clamp(1.55rem,2.4vw,2rem);font-weight:600;line-height:1.2;}
+  .editorial-discovery p {color:var(--color-text-secondary);margin-top:.7rem;max-width:62ch;line-height:1.6;}
+  .discovery-links {display:flex;flex-direction:column;justify-content:center;align-items:flex-start;gap:.85rem;font-weight:600;font-size:.93rem;}
+  .editorial-latest {padding-top:clamp(2rem,4vw,3.5rem);}
+  .editorial-latest-grid {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0 2rem;}
+  .editorial-latest-item {padding:1.3rem 0;border-bottom:1px solid var(--color-border);}
+  .editorial-latest-item h3 {font-size:1.2rem;font-weight:600;line-height:1.32;overflow-wrap:break-word;}
+  .editorial-latest-item time {display:block;font-size:.78rem;color:var(--color-muted);margin-top:.65rem;}
+  @media (max-width:900px) {.puxadinho-lead-grid{grid-template-columns:minmax(0,5fr) minmax(0,3fr);gap:2rem}.radar-top-card{padding-inline:1rem}.radar-top-card h3{font-size:1.35rem}}
+  @media (max-width:720px) {.editorial-masthead span:last-child{display:none}.puxadinho-lead-grid{grid-template-columns:1fr;gap:1.4rem}.puxadinho-headline{max-width:22ch}.puxadinho-lead-image{max-width:600px}.radar-top-grid{grid-template-columns:1fr}.radar-top-card,.radar-top-card:first-child,.radar-top-card:last-child{padding:1.4rem 0}.radar-top-card + .radar-top-card{border-left:0;border-top:1px solid var(--color-border)}.editorial-discovery{grid-template-columns:1fr;gap:1.1rem}.editorial-latest-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+  @media (max-width:480px) {.editorial-home{padding-inline:var(--spacing-4)}.puxadinho-headline{font-size:clamp(2.15rem,9vw,2.75rem)}.editorial-latest-grid{grid-template-columns:1fr}.section-eyebrow{align-items:flex-start}.radar-top-card p{-webkit-line-clamp:3}}
+
   .radar-intro { max-width:var(--wide-width); margin:0 auto; padding:clamp(3rem,6vw,6rem) var(--spacing-6) var(--spacing-10); }
   .radar-eyebrow,.radar-kicker { color:var(--color-brand); font-size:.72rem; font-weight:750; letter-spacing:.14em; }
   .radar-dot { display:inline-block; width:.5rem;height:.5rem;border-radius:50%;background:#d39951;margin-right:.55rem; }
