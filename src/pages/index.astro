@@ -5,24 +5,35 @@ import TagCloud from "../components/TagCloud.astro";
 import Base from "../layouts/Base.astro";
 import { resolveBlogSiteIdentity } from "../utils/site-identity";
 
-const [{ entries: recentEditions, cacheHint }, settings] = await Promise.all([
+const [{ entries: recentEditions, cacheHint }, { entries: weeklyAnalyses, cacheHint: analysesCacheHint }, settings] = await Promise.all([
   getEmDashCollection("posts", {
     locale: "pt-BR",
     orderBy: { published_at: "desc" },
     limit: 100,
   }),
+  getEmDashCollection("posts", {
+    locale: "pt-BR",
+    status: "published",
+    where: { category: "estudos-e-analises" },
+    orderBy: { published_at: "desc" },
+    limit: 1,
+  }),
   getSiteSettings(),
 ]);
 const { siteTitle, siteTagline } = resolveBlogSiteIdentity(settings);
+const featuredAnalysis = weeklyAnalyses[0];
 const puxadinhoDaSemana = recentEditions.find((entry) => entry.id.startsWith("puxadinho-"));
 const editorialLanes = [
   { label: "Radar Normativo", number: "01", slug: "radar-normativo-", archive: "/category/radar-normativo-urbano", kind: "Regulação urbana" },
   { label: "Radar Imobiliário", number: "02", slug: "radar-imobiliario-", archive: "/category/radar-imobiliario-metropolitano", kind: "Mercado e investimentos" },
   { label: "Radar de Contratações", number: "03", slug: "radar-contratacoes-", archive: "/category/radar-contratacoes-urbanisticas", kind: "Editais e oportunidades" },
 ].map((lane) => ({ ...lane, latest: recentEditions.find((post) => post.id.startsWith(lane.slug)) }));
-const otherRecentPosts = recentEditions.filter((post) => post.id !== puxadinhoDaSemana?.id && !editorialLanes.some((lane) => lane.latest?.id === post.id)).slice(0, 6);
+const otherRecentPosts = recentEditions.filter((post) => post.id !== puxadinhoDaSemana?.id && post.id !== featuredAnalysis?.id && !editorialLanes.some((lane) => lane.latest?.id === post.id)).slice(0, 6);
 
-if (Astro.cache?.enabled) Astro.cache.set(cacheHint);
+if (Astro.cache?.enabled) {
+  Astro.cache.set(cacheHint);
+  Astro.cache.set(analysesCacheHint);
+}
 
 function formatDate(date: Date | null | undefined) {
   if (!date) return "";
@@ -61,6 +72,37 @@ function formatDate(date: Date | null | undefined) {
         </article>
       ) : (
         <p class="editorial-empty">O próximo artigo de O Puxadinho será apresentado neste espaço.</p>
+      )}
+    </section>
+
+    <section class="weekly-feature" aria-labelledby="weekly-feature-heading">
+      <div class="section-eyebrow">
+        <h2 id="weekly-feature-heading">Análises da semana</h2>
+        <a href="/category/estudos-e-analises">Arquivo de estudos e análises <span aria-hidden="true">↗</span></a>
+      </div>
+      {featuredAnalysis ? (
+        <article class="weekly-feature-content">
+          <div class="weekly-feature-copy">
+            <span class="story-category">Em destaque · Análise</span>
+            <h3><a href={`/posts/${featuredAnalysis.id}`}>{featuredAnalysis.data.title}</a></h3>
+            {featuredAnalysis.data.excerpt && <p class="weekly-feature-deck">{featuredAnalysis.data.excerpt}</p>}
+            <div class="lead-bottom">
+              {featuredAnalysis.data.publishedAt && <time datetime={featuredAnalysis.data.publishedAt.toISOString()}>{formatDate(featuredAnalysis.data.publishedAt)}</time>}
+              <a href={`/posts/${featuredAnalysis.id}`}>Ler análise completa <span aria-hidden="true">→</span></a>
+            </div>
+          </div>
+          {featuredAnalysis.data.featured_image && (
+            <a class="weekly-feature-image" href={`/posts/${featuredAnalysis.id}`} aria-label={`Ler ${featuredAnalysis.data.title}`}>
+              <Image image={featuredAnalysis.data.featured_image} />
+            </a>
+          )}
+        </article>
+      ) : (
+        <div class="weekly-feature-reserved">
+          <span class="story-category">Análises semanais</span>
+          <p>Espaço editorial reservado às análises da semana. A próxima publicação aparecerá aqui automaticamente.</p>
+          <a href="/category/estudos-e-analises">Explorar estudos e análises <span aria-hidden="true">→</span></a>
+        </div>
       )}
     </section>
 
@@ -137,6 +179,20 @@ function formatDate(date: Date | null | undefined) {
   .puxadinho-lead-image {display:block;min-width:0;overflow:hidden;}
   .puxadinho-lead-image :global(img) {display:block;width:100%;height:auto;aspect-ratio:4/3;object-fit:cover;}
   .editorial-empty {padding:2rem 0;color:var(--color-muted);}
+  /* Secondary featured story: below the lead essay, above the Radar columns. */
+  .weekly-feature {padding:0 0 clamp(2rem,3.6vw,3rem);}
+  .weekly-feature-content {display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr);gap:clamp(1.5rem,3vw,3rem);align-items:center;padding:1.4rem 0;}
+  .weekly-feature-copy h3 {font-family:var(--font-heading);font-size:clamp(1.6rem,2.8vw,2.35rem);font-weight:600;line-height:1.2;letter-spacing:-.015em;max-width:27ch;overflow-wrap:break-word;}
+  .weekly-feature-copy h3 a {color:var(--color-text);text-decoration:none;}
+  .weekly-feature-copy h3 a:hover {color:var(--color-brand);text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:.12em;}
+  .weekly-feature-deck {font-size:1.02rem;line-height:1.55;color:var(--color-text-secondary);margin-top:.85rem;max-width:62ch;}
+  .weekly-feature-image {display:block;min-width:0;overflow:hidden;}
+  .weekly-feature-image :global(img) {width:100%;height:auto;aspect-ratio:16/10;object-fit:cover;}
+  .weekly-feature-reserved {padding:1.45rem 1.6rem;background:var(--color-bg-subtle);border-left:2px solid var(--color-border);}
+  .weekly-feature-reserved .story-category {margin-bottom:.35rem;}
+  .weekly-feature-reserved p {font-size:1rem;line-height:1.55;color:var(--color-text-secondary);max-width:68ch;margin-bottom:.7rem;}
+  .weekly-feature-reserved a {font-size:.9rem;font-weight:600;text-underline-offset:.2em;}
+  @media(max-width:720px){.weekly-feature-content{grid-template-columns:1fr}.weekly-feature-image{max-width:540px}.weekly-feature-reserved{padding:1.2rem}}
   .radar-top-row {margin-top:.4rem;}
   .radar-top-grid {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));border-bottom:1px solid var(--color-border);}
   .radar-top-card {padding:1.65rem clamp(1rem,2.1vw,2rem) 2rem;min-width:0;display:flex;flex-direction:column;align-items:flex-start;}
