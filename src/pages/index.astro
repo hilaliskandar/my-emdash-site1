@@ -92,7 +92,7 @@ function formatDate(date: Date | null | undefined) {
 }
 ---
 
-<Base title={siteTitle} description={siteTagline}>
+<Base title={siteTitle} description={siteTagline} canonical={new URL("/", Astro.url).href}>
   <section class="radar-intro" aria-labelledby="radar-intro-title">
     <div class="radar-eyebrow"><span class="radar-dot"></span> PUBLICAÇÃO EDITORIAL INDEPENDENTE</div>
     <h1 id="radar-intro-title">Informação urbana para compreender o território.</h1>
