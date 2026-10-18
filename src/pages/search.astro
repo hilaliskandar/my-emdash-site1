@@ -4,72 +4,93 @@ export const prerender = false;
 import { search } from "emdash";
 import Base from "../layouts/Base.astro";
 
-const query = Astro.url.searchParams.get("q")?.trim() || "";
-
-// Use the FTS-backed search() API instead of loading every post and
-// filtering in JS. FTS scales as the post count grows, returns ranked
-// results, and handles tokenization/stemming. Templates that grep all
-// post bodies in JS quickly become unusable past a few hundred posts.
-const { items: results } = query
-	? await search(query, { collections: ["posts"], limit: 30 })
-	: { items: [] };
+const query = Astro.url.searchParams.get("q")?.trim().slice(0, 200) || "";
+const allowedCategories = ["todas", "normativo", "imobiliario", "contratacoes", "puxadinho", "outras"];
+const category = allowedCategories.includes(Astro.url.searchParams.get("editoria") || "")
+  ? Astro.url.searchParams.get("editoria")! : "todas";
+const from = Astro.url.searchParams.get("de") || "";
+const to = Astro.url.searchParams.get("ate") || "";
+const since = /^\d{4}-\d{2}-\d{2}$/.test(from) && !Number.isNaN(Date.parse(from)) ? from : "";
+const until = /^\d{4}-\d{2}-\d{2}$/.test(to) && !Number.isNaN(Date.parse(to)) ? to : "";
+const order = Astro.url.searchParams.get("ordem") === "recentes" ? "recentes" : "relevancia";
+const categoryLabels: Record<string,string> = {
+  todas:"Todas as editorias",normativo:"Radar Normativo",imobiliario:"Radar Imobiliário",
+  contratacoes:"Radar Contratações",puxadinho:"Puxadinho",outras:"Outras publicações"
+};
+type SearchResult = Awaited<ReturnType<typeof search>>["items"][number];
+type SearchEntry = { result: SearchResult; published_at: string | null; category: string; position: number };
+const {items} = query ? await search(query,{collections:["posts"],limit:100}) : {items: [] as SearchResult[]};
+const slugs = [...new Set(items.map((item)=>item.slug ?? item.id).filter((s):s is string=>typeof s==="string"))];
+const metadata = new Map<string,{published_at:string|null;category:string}>();
+if (slugs.length) {
+  const db = (Astro.locals as typeof Astro.locals & { runtime: { env: { DB: D1Database } } }).runtime.env.DB;
+  const placeholders = slugs.map(()=>"?").join(",");
+  const posts = await db.prepare(
+    `SELECT slug,published_at FROM ec_posts
+      WHERE slug IN (${placeholders}) AND status='published' AND deleted_at IS NULL`
+  ).bind(...slugs).all<{slug:string;published_at:string|null}>();
+  for (const post of posts.results) {
+    const slug=post.slug;
+    const cat=slug.startsWith("radar-normativo-")?"normativo"
+      :slug.startsWith("radar-imobiliario-")?"imobiliario"
+      :slug.startsWith("radar-contratacoes-")?"contratacoes"
+      :slug.startsWith("puxadinho-")?"puxadinho":"outras";
+    metadata.set(slug,{published_at:post.published_at,category:cat});
+  }
+}
+let results: SearchEntry[] = items.flatMap((result,position)=>{
+  const slug=result.slug ?? result.id;
+  const info=metadata.get(slug);
+  if(!info)return [];
+  if(category!=="todas"&&info.category!==category)return [];
+  const date=info.published_at?.slice(0,10) || "";
+  if(since&&(!date||date<since))return [];
+  if(until&&(!date||date>until))return [];
+  return [{result,published_at:info.published_at,category:info.category,position}];
+});
+if(order==="recentes")results.sort((a,b)=>(b.published_at||"").localeCompare(a.published_at||"")||a.position-b.position);
 ---
-
-<Base
-	title={query ? `Search: ${query}` : "Search"}
-	description="Search blog posts"
->
-	<section class="search-page">
-		<h1 class="search-title">Search</h1>
-
-		<form method="get" action="/search" class="search-form">
-			<label for="site-search-query" class="visually-hidden"
-				>Search blog posts</label
-			>
-			<input
-				id="site-search-query"
-				type="search"
-				name="q"
-				value={query}
-				placeholder="Search posts..."
-				class="search-input"
-				autofocus
-			/>
-			<button type="submit" class="search-button">Search</button>
-		</form>
-
-		{
-			query && (
-				<p class="search-summary">
-					{results.length === 0
-						? `No results for "${query}"`
-						: `${results.length} result${results.length === 1 ? "" : "s"} for "${query}"`}
-				</p>
-			)
-		}
-
-		{
-			results.length > 0 && (
-				<ol class="search-results">
-					{results.map((result) => (
-						<li class="search-result">
-							<a
-								href={`/posts/${result.slug ?? result.id}`}
-								class="result-link"
-							>
-								<h2 class="result-title">{result.title ?? "Untitled"}</h2>
-								{result.snippet && (
-									<p class="result-snippet" set:html={result.snippet} />
-								)}
-							</a>
-						</li>
-					))}
-				</ol>
-			)
-		}
-
-		{!query && <p class="search-hint">Enter a search term to find posts.</p>}
-	</section>
+<Base title={query ? `Busca: ${query}` : "Pesquisa no acervo"} description="Pesquise os artigos do Radar Regulatório por palavra, editoria e período.">
+  <section class="search-page">
+    <h1 class="search-title">Pesquisa no acervo</h1>
+    <form method="get" action="/search" class="search-form archive-search">
+      <label class="field">Palavra ou expressão
+        <input type="search" name="q" value={query} placeholder="Digite os termos da pesquisa" class="search-input" />
+      </label>
+      <label class="field">Editoria
+        <select name="editoria">
+          {allowedCategories.map(c=><option value={c} selected={category===c}>{categoryLabels[c]}</option>)}
+        </select>
+      </label>
+      <label class="field">De
+        <input type="date" name="de" value={since} />
+      </label>
+      <label class="field">Até
+        <input type="date" name="ate" value={until} />
+      </label>
+      <label class="field">Ordenação
+        <select name="ordem">
+          <option value="relevancia" selected={order==="relevancia"}>Relevância</option>
+          <option value="recentes" selected={order==="recentes"}>Mais recentes primeiro</option>
+        </select>
+      </label>
+      <button type="submit" class="search-button">Pesquisar</button>
+    </form>
+    {query && <p class="search-summary">{results.length===0
+      ? `Nenhum resultado para “${query}” com os filtros escolhidos.`
+      : `${results.length} resultado(s) para “${query}”`}</p>}
+    {results.length>0&&<ol class="search-results">
+      {results.map(({result,published_at,category:editoria})=><li class="search-result">
+        <a href={`/posts/${encodeURIComponent(result.slug??result.id)}`} class="result-link">
+          <h2 class="result-title">{result.title??"Sem título"}</h2>
+          <p class="search-summary">{categoryLabels[editoria]}{published_at?` · ${published_at.slice(0,10).split("-").reverse().join("/")}`:""}</p>
+          {result.snippet&&<p class="result-snippet" set:html={result.snippet}/>}
+        </a>
+      </li>)}
+    </ol>}
+    {!query&&<p class="search-hint">Informe uma palavra ou expressão para pesquisar o acervo. Você pode restringir por editoria e período.</p>}
+    {items.length===100&&<p class="search-hint">A busca analisa até 100 correspondências por consulta. Refine os termos para ampliar a precisão.</p>}
+  </section>
 </Base>
 
 <style>
@@ -193,4 +214,9 @@ const { items: results } = query
 		padding: 0 0.1em;
 		border-radius: 2px;
 	}
+
+  .archive-search{display:grid;grid-template-columns:repeat(auto-fit,minmax(165px,1fr));align-items:end;gap:var(--spacing-3)}
+  .archive-search .field{display:flex;flex-direction:column;gap:var(--spacing-2);font-weight:600}
+  .archive-search select,.archive-search input{min-width:0;max-width:100%;padding:var(--spacing-2);font:inherit;color:var(--color-text);background:var(--color-bg);border:1px solid var(--color-border);border-radius:var(--radius)}
+  .archive-search button{align-self:end}
 </style>
