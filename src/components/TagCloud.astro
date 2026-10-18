@@ -1,0 +1,103 @@
+---
+import { getEmDashCollection, getTermsForEntries } from "emdash";
+
+interface Props { title?: string; maxTerms?: number }
+const { title = "Nuvem de assuntos", maxTerms = 36 } = Astro.props;
+// One bounded collection read and one batched taxonomy read, not one query per tag.
+// When the acervo exceeds 100 entries, replace with a paginated aggregation.
+const { entries, cacheHint } = await getEmDashCollection("posts", {
+  locale: "pt-BR",
+  orderBy: { published_at: "desc" },
+  limit: 100,
+});
+if (Astro.cache?.enabled) Astro.cache.set(cacheHint);
+const ids = entries.map((entry) => entry.data.id);
+const byEntry = ids.length ? await getTermsForEntries("posts", ids, "tag") : new Map();
+const frequencies = new Map<string, { slug: string; label: string; count: number; group: string }>();
+for (const id of ids) {
+  const seen = new Set<string>();
+  for (const tag of byEntry.get(id) ?? []) {
+    if (seen.has(tag.slug)) continue;
+    seen.add(tag.slug);
+    const previous = frequencies.get(tag.slug);
+    if (previous) previous.count += 1;
+    else frequencies.set(tag.slug, {
+      slug: tag.slug,
+      label: tag.label,
+      count: 1,
+      group: tag.slug.split(":", 1)[0] || "outros",
+    });
+  }
+}
+const terms = [...frequencies.values()]
+  .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label, "pt-BR"))
+  .slice(0, Math.max(1, Math.min(maxTerms, 100)));
+const max = Math.max(1, ...terms.map((t) => t.count));
+const groups = [
+  { key: "all", label: "Todas" },
+  { key: "tema", label: "Temas" },
+  { key: "municipio", label: "Cidades" },
+  { key: "regiao-metropolitana", label: "Regiões" },
+  { key: "empresa", label: "Empresas" },
+  { key: "fundo", label: "Fundos" },
+  { key: "orgao-publico", label: "Órgãos" },
+];
+const available = groups.filter((g) => g.key === "all" || terms.some((t) => t.group === g.key));
+const instance = "radar-tag-cloud-" + Math.random().toString(36).slice(2);
+---
+{terms.length > 0 && (
+  <section class="tag-cloud" aria-label={title} id={instance}>
+    <h2>{title}</h2>
+    <div class="tag-cloud-filters" role="group" aria-label="Filtrar nuvem de tags">
+      {available.map((g) => (
+        <button type="button" class:list={["tag-filter", {active: g.key === "all"}]}
+          data-filter={g.key} aria-pressed={g.key === "all" ? "true" : "false"}>{g.label}</button>
+      ))}
+    </div>
+    <div class="tag-cloud-words" aria-label="Tags por frequência">
+      {terms.map((t) => {
+        const weight = max <= 1 ? 0.5 : Math.log(1 + t.count) / Math.log(1 + max);
+        const fontSize = (0.83 + 0.72 * weight).toFixed(2);
+        return (
+          <a href={`/tag/${encodeURIComponent(t.slug)}`} class="tag-word"
+             data-group={t.group} style={`--tag-size: ${fontSize}rem`}
+             title={`${t.label}: ${t.count} ${t.count === 1 ? "artigo" : "artigos"}`}>
+             {t.label}<span class="sr-only"> ({t.count} artigos)</span>
+          </a>
+        );
+      })}
+    </div>
+  </section>
+)}
+<script>
+  document.querySelectorAll<HTMLElement>(".tag-cloud").forEach((cloud) => {
+    if (cloud.dataset.initialized === "true") return;
+    cloud.dataset.initialized = "true";
+    cloud.querySelectorAll<HTMLButtonElement>(".tag-filter").forEach((button) => {
+      button.addEventListener("click", () => {
+        const group = button.dataset.filter;
+        cloud.querySelectorAll<HTMLButtonElement>(".tag-filter").forEach((item) => {
+          const active = item === button;
+          item.classList.toggle("active", active);
+          item.setAttribute("aria-pressed", String(active));
+        });
+        cloud.querySelectorAll<HTMLElement>(".tag-word").forEach((word) => {
+          word.hidden = group !== "all" && word.dataset.group !== group;
+        });
+      });
+    });
+  });
+</script>
+<style>
+  .tag-cloud { padding: 1rem; border: 1px solid var(--color-border); border-radius: var(--radius-lg); background: var(--color-surface); }
+  .tag-cloud h2 { font-size: 1rem; line-height: 1.3; margin: 0 0 .75rem; }
+  .tag-cloud-filters { display: flex; flex-wrap: wrap; gap: .35rem; margin-bottom: .9rem; }
+  .tag-filter { border: 1px solid var(--color-border); padding: .28rem .55rem; border-radius: 999px; background: transparent; color: var(--color-text-secondary); font-size: .76rem; cursor: pointer; }
+  .tag-filter:hover, .tag-filter:focus-visible, .tag-filter.active { background: var(--color-border); color: var(--color-text); }
+  .tag-cloud-words { display: flex; flex-wrap: wrap; gap: .55rem .75rem; align-items: baseline; line-height: 1.5; }
+  .tag-word { font-size: var(--tag-size); color: var(--color-text-secondary); text-decoration: none; font-weight: 600; }
+  .tag-word:hover, .tag-word:focus-visible { color: var(--color-brand); text-decoration: underline; }
+  .tag-word[hidden] { display: none !important; }
+  .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+  @media (max-width: 600px) { .tag-cloud { padding: .75rem; } }
+</style>
