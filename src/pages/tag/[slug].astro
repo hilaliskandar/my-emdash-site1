@@ -19,49 +19,49 @@ if (!term) {
 	return Astro.redirect("/404");
 }
 
-const cursor = Astro.url.searchParams.get("cursor") || undefined;
-const {
-	entries: posts,
-	cacheHint,
-	nextCursor,
-} = await getEmDashCollection("posts", {
-	where: { tag: term.slug },
-	orderBy: { published_at: "desc" },
-	limit: 20,
-	cursor,
+// EmDash's taxonomy "where" filter currently returns no posts for imported
+// tag assignments. Use the same bounded collection and batched tag query that
+// powers the editorial taxonomy; avoid N+1 reads.
+const { entries: recentPosts, cacheHint } = await getEmDashCollection("posts", {
+  locale: "pt-BR",
+  status: "published",
+  orderBy: { published_at: "desc" },
+  limit: 100,
 });
-
-if (Astro.cache?.enabled) {
-	Astro.cache.set(termsResult.cacheHint);
-	Astro.cache.set(cacheHint);
-}
-
-// Single batched query for tags on every post tagged with this term,
-// rather than calling getEntryTerms() per post.
 const tagsByEntry = await getTermsForEntries(
-	"posts",
-	posts.map((p) => p.data.id),
-	"tag",
+  "posts",
+  recentPosts.map((post) => post.data.id),
+  "tag",
 );
+const matchingPosts = recentPosts
+  .filter((post) => (tagsByEntry.get(post.data.id) ?? []).some((tag) => tag.slug === term.slug));
+const pageNumber = Math.max(1, Math.min(1000, Number.parseInt(Astro.url.searchParams.get("pagina") || "1", 10) || 1));
+const pageSize = 20;
+const totalPages = Math.ceil(matchingPosts.length / pageSize);
+const posts = matchingPosts.slice((pageNumber - 1) * pageSize, pageNumber * pageSize);
+if (Astro.cache?.enabled) {
+  Astro.cache.set(termsResult.cacheHint);
+  Astro.cache.set(cacheHint);
+}
 const filteredPosts = posts.map((post) => ({
-	post,
-	tags: tagsByEntry.get(post.data.id) ?? [],
+  post,
+  tags: tagsByEntry.get(post.data.id) ?? [],
 }));
 ---
 
 <Base
-	title={`Posts tagged "${term.label}"`}
-	description={`All posts tagged with ${term.label}`}
+	title={`Publicações sobre ${term.label}`}
+	description={`Publicações do Radar Regulatório relacionadas a ${term.label}.`}
 >
 	<section class="archive-section">
 		<header class="archive-header">
-			<span class="archive-label">Tag</span>
+			<span class="archive-label">ASSUNTO</span>
 			<h1 class="archive-title">{term.label}</h1>
 		</header>
 
 		{
 			filteredPosts.length === 0 ? (
-				<p class="no-posts">No posts with this tag yet.</p>
+				<p class="no-posts">Nenhuma publicação vinculada a esta etiqueta.</p>
 			) : (
 				<div class="posts-grid">
 					{filteredPosts.map(({ post, tags }) => (
@@ -79,18 +79,10 @@ const filteredPosts = posts.map((post) => ({
 				</div>
 			)
 		}
-		<nav class="pagination" aria-label="Pagination">
-			{cursor && <a href={`/tag/${term.slug}`}>First page</a>}
-			{
-				nextCursor && (
-					<a
-						href={`/tag/${term.slug}?cursor=${encodeURIComponent(nextCursor)}`}
-					>
-						Next page
-					</a>
-				)
-			}
-		</nav>
+		<nav class="pagination" aria-label="Paginação">
+      {pageNumber > 1 && <a href={`/tag/${encodeURIComponent(term.slug)}?pagina=${pageNumber - 1}`}>Página anterior</a>}
+      {pageNumber < totalPages && <a href={`/tag/${encodeURIComponent(term.slug)}?pagina=${pageNumber + 1}`}>Próxima página</a>}
+    </nav>
 	</section>
 </Base>
 
