@@ -1,98 +1,31 @@
 ---
-import {
-	getEmDashCollection,
-	getTermsForEntries,
-	getSiteSettings,
-} from "emdash";
+import { getEmDashCollection, getSiteSettings } from "emdash";
 import { Image } from "emdash/ui";
 import Base from "../layouts/Base.astro";
-import PostCard from "../components/PostCard.astro";
-import { getReadingTime } from "../utils/reading-time";
 import { resolveBlogSiteIdentity } from "../utils/site-identity";
 
-// Limit to what we render (1 featured + 6 grid). The DB does the slicing
-// instead of fetching every post and discarding the tail in JS.
-const POSTS_PER_PAGE = 7;
-
-const [{ entries: posts, cacheHint }, settings] = await Promise.all([
-	getEmDashCollection("posts", {
-		orderBy: { published_at: "desc" },
-		limit: POSTS_PER_PAGE + 1, // +1 to detect "view all" need
-	}),
-	getSiteSettings(),
+const [{ entries: recentEditions, cacheHint }, settings] = await Promise.all([
+  getEmDashCollection("posts", {
+    locale: "pt-BR",
+    orderBy: { published_at: "desc" },
+    limit: 100,
+  }),
+  getSiteSettings(),
 ]);
 const { siteTitle, siteTagline } = resolveBlogSiteIdentity(settings);
-
-// Latest editions for each homepage editorial lane. Fetch independently from
-// the general homepage highlights so one Radar cannot crowd out the other.
-const { entries: recentEditions, cacheHint: recentEditionsCacheHint } =
-	await getEmDashCollection("posts", {
-		locale: "pt-BR",
-		orderBy: { published_at: "desc" },
-		limit: 100,
-	});
-// Feed editorial: the latest published Puxadinho leads the homepage,
-// followed by one latest issue of each of the three Radars.
 const puxadinhoDaSemana = recentEditions.find((entry) => entry.id.startsWith("puxadinho-"));
 const editorialLanes = [
   { label: "Radar Normativo", number: "01", slug: "radar-normativo-", archive: "/category/radar-normativo-urbano", kind: "Regulação urbana" },
   { label: "Radar Imobiliário", number: "02", slug: "radar-imobiliario-", archive: "/category/radar-imobiliario-metropolitano", kind: "Mercado e investimentos" },
   { label: "Radar de Contratações", number: "03", slug: "radar-contratacoes-", archive: "/category/radar-contratacoes-urbanisticas", kind: "Editais e oportunidades" },
 ].map((lane) => ({ ...lane, latest: recentEditions.find((post) => post.id.startsWith(lane.slug)) }));
+const otherRecentPosts = recentEditions.filter((post) => post.id !== puxadinhoDaSemana?.id && !editorialLanes.some((lane) => lane.latest?.id === post.id)).slice(0, 6);
 
+if (Astro.cache?.enabled) Astro.cache.set(cacheHint);
 
-if (Astro.cache?.enabled) {
-	Astro.cache.set(cacheHint);
-	Astro.cache.set(recentEditionsCacheHint);
-}
-
-// Trim the lookahead post used to detect overflow
-const visiblePosts = posts.slice(0, POSTS_PER_PAGE);
-const hasMorePosts = posts.length > POSTS_PER_PAGE;
-
-// Find the first post with a featured image for the hero
-const featuredPost = visiblePosts.find((p) => p.data.featured_image);
-const featuredIndex = featuredPost ? visiblePosts.indexOf(featuredPost) : -1;
-
-// Get remaining posts (exclude featured if found, limit to 6 for grid)
-const gridPosts = visiblePosts
-	.filter((_, i) => i !== featuredIndex)
-	.slice(0, 6);
-
-// Single batched query for tags across the featured post + grid posts.
-// Avoids the N+1 pattern of calling getEntryTerms() per entry.
-// Bylines are already hydrated on entry.data.bylines by getEmDashCollection.
-const tagEntryIds = [
-	...(featuredPost ? [featuredPost.data.id] : []),
-	...gridPosts.map((p) => p.data.id),
-];
-const tagsByEntry = await getTermsForEntries("posts", tagEntryIds, "tag");
-
-const featuredTags = featuredPost
-	? (tagsByEntry.get(featuredPost.data.id) ?? []).map((t) => ({
-			slug: t.slug,
-			label: t.label,
-		}))
-	: [];
-const featuredBylines = featuredPost?.data.bylines ?? [];
-
-const gridPostsWithTags = gridPosts.map((post) => ({
-	post,
-	tags: (tagsByEntry.get(post.data.id) ?? []).map((t) => ({
-		slug: t.slug,
-		label: t.label,
-	})),
-	bylines: post.data.bylines ?? [],
-}));
-
-// Format date helper
 function formatDate(date: Date | null | undefined) {
-	if (!date) return null;
-	return date.toLocaleDateString("pt-BR", {
-		year: "numeric",
-		month: "long",
-		day: "numeric",
-	});
+  if (!date) return "";
+  return date.toLocaleDateString("pt-BR", { year: "numeric", month: "long", day: "numeric" });
 }
 ---
 
@@ -112,7 +45,7 @@ function formatDate(date: Date | null | undefined) {
         <article class="puxadinho-lead-grid">
           <div class="puxadinho-lead-text">
             <span class="story-category">Análise e perspectiva urbana</span>
-            <h3 class="puxadinho-headline"><a href={`/posts/${puxadinhoDaSemana.id}`}>{puxadinhoDaSemana.data.title}</a></h3>
+            <h1 class="puxadinho-headline"><a href={`/posts/${puxadinhoDaSemana.id}`}>{puxadinhoDaSemana.data.title}</a></h1>
             {puxadinhoDaSemana.data.excerpt && <p class="puxadinho-deck">{puxadinhoDaSemana.data.excerpt}</p>}
             <div class="lead-bottom">
               {puxadinhoDaSemana.data.publishedAt && <time datetime={puxadinhoDaSemana.data.publishedAt.toISOString()}>{formatDate(puxadinhoDaSemana.data.publishedAt)}</time>}
@@ -158,14 +91,14 @@ function formatDate(date: Date | null | undefined) {
       <div class="discovery-links"><a href="/etiquetas">Explorar etiquetas <span aria-hidden="true">→</span></a><a href="/posts">Acervo completo <span aria-hidden="true">→</span></a></div>
     </section>
 
-    {gridPostsWithTags.length > 0 && (
+    {otherRecentPosts.length > 0 && (
       <section class="editorial-latest" aria-labelledby="editorial-latest-heading">
         <div class="section-eyebrow">
           <h2 id="editorial-latest-heading">Outras publicações recentes</h2>
           <a href="/posts">Ver todas <span aria-hidden="true">↗</span></a>
         </div>
         <div class="editorial-latest-grid">
-          {gridPostsWithTags.map(({ post }) => (
+          {otherRecentPosts.map((post) => (
             <article class="editorial-latest-item">
               <h3><a href={`/posts/${post.id}`}>{post.data.title}</a></h3>
               {post.data.publishedAt && <time datetime={post.data.publishedAt.toISOString()}>{formatDate(post.data.publishedAt)}</time>}
