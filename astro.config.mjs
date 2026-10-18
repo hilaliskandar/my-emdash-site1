@@ -27,6 +27,13 @@ export default defineConfig({
 	fonts: [
 		{
 			provider: fontProviders.google(),
+			name: "Source Serif 4",
+			cssVariable: "--font-editorial",
+			weights: [400, 600, 700],
+			fallbacks: ["Georgia", "serif"],
+		},
+		{
+			provider: fontProviders.google(),
 			name: "Inter",
 			cssVariable: "--font-body",
 			weights: [400, 500, 600, 700],
