@@ -1,6 +1,7 @@
 ---
 import { getEmDashCollection, getSiteSettings } from "emdash";
 import { Image } from "emdash/ui";
+import TagCloud from "../components/TagCloud.astro";
 import Base from "../layouts/Base.astro";
 import { resolveBlogSiteIdentity } from "../utils/site-identity";
 
@@ -38,7 +39,7 @@ function formatDate(date: Date | null | undefined) {
 
     <section class="puxadinho-lead" aria-labelledby="puxadinho-heading">
       <div class="section-eyebrow">
-        <h2 id="puxadinho-heading">O Puxadinho · Artigo da semana</h2>
+        <span id="puxadinho-heading">O Puxadinho · Artigo da semana</span>
         <a href="/category/puxadinho">Todos os ensaios <span aria-hidden="true">↗</span></a>
       </div>
       {puxadinhoDaSemana ? (
@@ -91,6 +92,10 @@ function formatDate(date: Date | null | undefined) {
       <div class="discovery-links"><a href="/etiquetas">Explorar etiquetas <span aria-hidden="true">→</span></a><a href="/posts">Acervo completo <span aria-hidden="true">→</span></a></div>
     </section>
 
+    <section class="editorial-tags" aria-label="Navegação por assuntos">
+      <TagCloud title="Assuntos em destaque" maxTerms={24} />
+    </section>
+
     {otherRecentPosts.length > 0 && (
       <section class="editorial-latest" aria-labelledby="editorial-latest-heading">
         <div class="section-eyebrow">
@@ -115,7 +120,7 @@ function formatDate(date: Date | null | undefined) {
   .editorial-masthead {display:flex;justify-content:space-between;gap:1.5rem;padding:1.05rem 0;border-bottom:1px solid var(--color-border);color:var(--color-muted);font-size:.75rem;letter-spacing:.065em;}
   .editorial-masthead span:first-child {font-weight:700;color:var(--color-brand);}
   .section-eyebrow {display:flex;align-items:baseline;justify-content:space-between;gap:1rem;flex-wrap:wrap;padding:0 0 .85rem;border-bottom:2px solid var(--color-text);}
-  .section-eyebrow h2 {font-family:var(--font-body);font-size:.82rem;letter-spacing:.055em;font-weight:700;line-height:1.5;text-transform:none;}
+  .section-eyebrow h2, .section-eyebrow > span:first-child {font-family:var(--font-body);font-size:.82rem;letter-spacing:.055em;font-weight:700;line-height:1.5;text-transform:none;}
   .section-eyebrow span,.section-eyebrow a {color:var(--color-muted);font-size:.82rem;}
   .section-eyebrow a:hover {color:var(--color-brand);text-decoration:underline;text-underline-offset:.2em;}
   .puxadinho-lead {padding-top:clamp(1.65rem,3.5vw,3rem);}
@@ -149,7 +154,7 @@ function formatDate(date: Date | null | undefined) {
   .editorial-discovery h2 {font-size:clamp(1.55rem,2.4vw,2rem);font-weight:600;line-height:1.2;}
   .editorial-discovery p {color:var(--color-text-secondary);margin-top:.7rem;max-width:62ch;line-height:1.6;}
   .discovery-links {display:flex;flex-direction:column;justify-content:center;align-items:flex-start;gap:.85rem;font-weight:600;font-size:.93rem;}
-  .editorial-latest {padding-top:clamp(2rem,4vw,3.5rem);}
+  .editorial-tags {padding:2.2rem 0;border-bottom:1px solid var(--color-border);}\n  .editorial-latest {padding-top:clamp(2rem,4vw,3.5rem);}
   .editorial-latest-grid {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0 2rem;}
   .editorial-latest-item {padding:1.3rem 0;border-bottom:1px solid var(--color-border);}
   .editorial-latest-item h3 {font-size:1.2rem;font-weight:600;line-height:1.32;overflow-wrap:break-word;}
