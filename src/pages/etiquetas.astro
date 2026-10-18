@@ -1,0 +1,93 @@
+---
+import { getTaxonomyTermsWithCacheHint } from "emdash";
+import Base from "../layouts/Base.astro";
+
+const result = await getTaxonomyTermsWithCacheHint("tag", { includeCounts: true });
+if (Astro.cache?.enabled) Astro.cache.set(result.cacheHint);
+const terms = result.data.map((tag) => ({
+  slug: tag.slug,
+  label: tag.label,
+  group: tag.slug.includes(":") ? tag.slug.split(":")[0] : "outros",
+})).sort((a,b) => a.label.localeCompare(b.label,"pt-BR"));
+const groupLabels: Record<string,string> = {
+  tema:"Temas", municipio:"Municípios", "regiao-metropolitana":"Regiões metropolitanas",
+  empresa:"Empresas", fundo:"Fundos", "orgao-publico":"Órgãos públicos", instituicao:"Instituições",
+  outros:"Outros",
+};
+const groups = [...new Set(terms.map(t=>t.group))]
+ .sort((a,b)=> (groupLabels[a]||a).localeCompare(groupLabels[b]||b,"pt-BR"));
+---
+<Base title="Explorar etiquetas" description="Encontre todos os temas, municípios, regiões e organizações classificados no Radar Regulatório.">
+  <main class="directory" id="tag-directory">
+    <header class="heading">
+      <span class="eyebrow">Índice editorial</span>
+      <h1>Explore as etiquetas</h1>
+      <p>Consulte temas, municípios, regiões e organizações mencionados nas publicações do Radar Regulatório.</p>
+    </header>
+    <div class="controls">
+      <label for="tag-search">Pesquisar etiquetas</label>
+      <input id="tag-search" type="search" placeholder="Digite um tema, cidade ou organização" autocomplete="off" />
+      <label for="tag-filter">Categoria</label>
+      <select id="tag-filter">
+        <option value="all">Todas as categorias</option>
+        {groups.map(group => <option value={group}>{groupLabels[group] || group}</option>)}
+      </select>
+    </div>
+    <p id="tag-count" class="count" aria-live="polite">{terms.length} etiquetas cadastradas</p>
+    <ul class="terms">
+      {terms.map(tag => (
+        <li data-group={tag.group} data-search={tag.label.toLocaleLowerCase("pt-BR")}>
+          <a href={`/tag/${encodeURIComponent(tag.slug)}`}>{tag.label}</a>
+          <span>{groupLabels[tag.group] || tag.group}</span>
+        </li>
+      ))}
+    </ul>
+    <p id="tag-empty" hidden>Nenhuma etiqueta corresponde à pesquisa.</p>
+  </main>
+</Base>
+<script>
+  const root = document.getElementById("tag-directory");
+  if (root) {
+    const input = root.querySelector<HTMLInputElement>("#tag-search");
+    const select = root.querySelector<HTMLInputElement>("#tag-filter");
+    const items = [...root.querySelectorAll<HTMLLIElement>(".terms li")];
+    const count = root.querySelector<HTMLElement>("#tag-count");
+    const empty = root.querySelector<HTMLElement>("#tag-empty");
+    const normalize = (value: string) => value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+    const update = () => {
+      const query = normalize(input?.value ?? "");
+      const group = select?.value ?? "all";
+      let visible = 0;
+      for (const item of items) {
+        const show = (group === "all" || item.dataset.group === group) &&
+          normalize(item.dataset.search ?? "").includes(query);
+        item.hidden = !show;
+        if (show) visible++;
+      }
+      if (count) count.textContent = `${visible} ${visible === 1 ? "etiqueta encontrada" : "etiquetas encontradas"}`;
+      if (empty) empty.hidden = visible !== 0;
+    };
+    input?.addEventListener("input", update);
+    select?.addEventListener("change", update);
+  }
+</script>
+<style>
+  .directory { max-width: var(--wide-width); margin: 0 auto; padding: 2.5rem 1.5rem 5rem; }
+  .heading { margin-bottom: 2rem; }
+  .eyebrow { text-transform: uppercase; letter-spacing: .08em; font-size: .8rem; color: var(--color-muted); }
+  .heading h1 { font-size: clamp(2rem,4vw,3rem); margin: .5rem 0; }
+  .heading p { max-width: 65ch; color: var(--color-text-secondary); }
+  .controls { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,220px); gap: .45rem 1rem; align-items: end; margin: 1.5rem 0; }
+  .controls label { font-size: .8rem; font-weight: 600; }
+  .controls label:nth-of-type(1) { grid-column: 1; grid-row: 1; }
+  .controls label:nth-of-type(2) { grid-column: 2; grid-row: 1; }
+  .controls input, .controls select { min-width: 0; padding: .7rem; border: 1px solid var(--color-border); background: var(--color-surface); color: var(--color-text); border-radius: .45rem; }
+  .count { font-size: .9rem; color: var(--color-muted); margin: 1.5rem 0; }
+  .terms { display: grid; grid-template-columns: repeat(auto-fill,minmax(220px,1fr)); gap: .65rem; padding: 0; list-style: none; }
+  .terms li { display: flex; flex-direction: column; gap: .3rem; border: 1px solid var(--color-border); border-radius: .45rem; padding: .75rem; }
+  .terms li[hidden], #tag-empty[hidden] { display: none; }
+  .terms a { color: var(--color-text); font-weight: 600; overflow-wrap: anywhere; }
+  .terms a:hover { color: var(--color-brand); }
+  .terms li span { font-size: .75rem; color: var(--color-muted); }
+  @media(max-width:600px) { .controls { grid-template-columns: 1fr; } .controls label:nth-of-type(1),.controls label:nth-of-type(2){grid-column:1;grid-row:auto;} .controls label:nth-of-type(2){order:2;} .controls select{order:3;} }
+</style>
