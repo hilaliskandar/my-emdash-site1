@@ -1,0 +1,60 @@
+---
+interface Props { kind: "table" | "trajectory" | "itbi"; }
+const { kind } = Astro.props;
+const rows = [
+  ["Cabreúva","442,4","17,1%","4,3%"],
+  ["Campo Limpo Paulista","411,5","22,8%","2,4%"],
+  ["Itupeva","695,6","32,6%","2,9%"],
+  ["Jarinu","362,8","26,2%","3,1%"],
+  ["Jundiaí","4.238,3","33,5%","3,2%"],
+  ["Louveira","702,0","17,5%","2,3%"],
+  ["Várzea Paulista","531,5","20,2%","9,7%"],
+];
+const years = [
+  {year:2021,tax:100,inv:100},
+  {year:2022,tax:104,inv:199.2},
+  {year:2023,tax:112.5,inv:286},
+  {year:2024,tax:125.3,inv:323.5},
+  {year:2025,tax:126.2,inv:148.6}
+];
+const itbi = [{name:"Jarinu",value:47.3},{name:"Louveira",value:-82.1}];
+---
+{kind === "table" && <figure class="fiscal-inline">
+  <div class="scroll-table"><table><caption>Comparativo fiscal dos sete municípios — 2025</caption><thead><tr><th scope="col">Município</th><th scope="col">Receita corrente<br/>R$ milhões</th><th scope="col">Tributária/<br/>corrente</th><th scope="col">Investimento/<br/>corrente</th></tr></thead><tbody>{rows.map(r=><tr>{r.map((v,i)=>i===0?<th scope="row">{v}</th>:<td>{v}</td>)}</tr>)}</tbody></table></div>
+  <figcaption>Fonte: Relatório fiscal RMJ v3.10, pp. 2 e 10. Valores nominais de 2025; razões sobre receitas correntes. Indicadores descritivos, não notas de desempenho.</figcaption>
+</figure>}
+{kind === "trajectory" && <figure class="fiscal-inline">
+  <h3>Receita tributária e investimento liquidado — evolução real</h3>
+  <p class="chart-sub">Índices reais, 2021 = 100</p>
+  <div class="series-legend"><span><i class="tax"></i> Receita tributária</span><span><i class="inv"></i> Investimento liquidado</span></div>
+  <div class="year-grid">{years.map(v=><div class="year-group"><div class="bars"><div class="bar tax" style={`height:${v.tax/350*100}%`} title={`Receita tributária: ${v.tax}`}><span>{v.tax.toLocaleString("pt-BR")}</span></div><div class="bar inv" style={`height:${v.inv/350*100}%`} title={`Investimentos: ${v.inv}`}><span>{v.inv.toLocaleString("pt-BR")}</span></div></div><strong>{v.year}</strong></div>)}</div>
+  <figcaption>Fonte: Relatório fiscal RMJ v3.10, p. 3. Séries corrigidas pelo IPCA, normalizadas separadamente em 2021. O índice não representa valores em reais.</figcaption>
+</figure>}
+{kind === "itbi" && <figure class="fiscal-inline">
+  <h3>ITBI — trajetórias opostas em 2025</h3>
+  <p class="chart-sub">Variação real da arrecadação entre 2024 e 2025</p>
+  <div class="diverge">{itbi.map(v=><div class="diverge-row"><strong>{v.name}</strong><div class="axis"><div class={v.value>0?"positive":"negative"} style={`width:${Math.abs(v.value)/100*50}%`}></div></div><span>{v.value>0?"+":""}{v.value.toLocaleString("pt-BR")}%</span></div>)}</div>
+  <figcaption>Fonte: Relatório fiscal RMJ v3.10, p. 5. Oscilações do ITBI não demonstram, por si sós, mudança dos preços imobiliários.</figcaption>
+</figure>}
+<style>
+.fiscal-inline{margin:2rem 0 2.4rem;padding:1.15rem 1.25rem;border:1px solid var(--color-border);background:var(--color-surface);color:var(--color-text);font-family:var(--font-body),sans-serif}
+.fiscal-inline h3{font-family:var(--font-heading);font-size:1.3rem;margin:0 0 .2rem}
+.fiscal-inline figcaption{font-size:.78rem;line-height:1.5;color:var(--color-muted);margin-top:.8rem}
+.scroll-table{overflow-x:auto}.fiscal-inline table{width:100%;border-collapse:collapse;font-size:.85rem}
+.fiscal-inline caption{text-align:left;font-weight:700;font-size:1.1rem;margin-bottom:1rem;color:var(--color-text)}
+.fiscal-inline th,.fiscal-inline td{padding:.65rem .5rem;border-bottom:1px solid var(--color-border-subtle);text-align:right;white-space:nowrap}
+.fiscal-inline th:first-child{text-align:left}.fiscal-inline tbody tr:nth-child(even){background:var(--color-bg-subtle)}
+.chart-sub{font-size:.83rem;margin:.1rem 0 1.1rem;color:var(--color-muted)}
+.series-legend{display:flex;flex-wrap:wrap;gap:1rem;font-size:.8rem;margin-bottom:.75rem}
+.series-legend span{display:flex;align-items:center;gap:.4rem}.series-legend i{width:.85rem;height:.85rem;display:inline-block}
+.tax{background:#597784}.inv{background:#b18048}
+.year-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:.55rem;height:225px;align-items:end;border-bottom:1px solid var(--color-border)}
+.year-group{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:end;font-size:.8rem;gap:.55rem}
+.bars{display:flex;align-items:end;justify-content:center;gap:.2rem;width:100%;height:185px}
+.bar{width:42%;min-width:0;position:relative;border-radius:2px 2px 0 0}
+.bar span{position:absolute;bottom:100%;left:50%;transform:translateX(-50%);font-size:.66rem;color:var(--color-text);white-space:nowrap}
+.diverge{display:grid;gap:1rem;margin-top:1.6rem}.diverge-row{display:grid;grid-template-columns:5rem 1fr 4.5rem;gap:.65rem;align-items:center;font-size:.85rem}
+.axis{height:1.45rem;position:relative;background:linear-gradient(to right,transparent calc(50% - .5px),var(--color-border) 50%,transparent calc(50% + .5px))}
+.positive,.negative{position:absolute;height:100%;top:0}.positive{left:50%;background:#597784}.negative{right:50%;background:#b18048}
+@media(max-width:550px){.fiscal-inline{padding:1rem .6rem}.bars{height:160px}.year-grid{height:205px}.bar span{font-size:.57rem}.diverge-row{grid-template-columns:4rem 1fr 3.5rem;gap:.35rem}}
+</style>
