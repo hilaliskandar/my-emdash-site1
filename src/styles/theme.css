@@ -1,22 +1,24 @@
-/* Radar Editorial: identity for the two Radar publications. */
+/* Radar Regulatório: restrained editorial identity for all five sections. */
 :root {
-  --color-bg: light-dark(#fcfcfa, #10191e);
-  --color-bg-subtle: light-dark(#f5f6f3, #172329);
-  --color-text: light-dark(#172b35, #edf3f2);
-  --color-text-secondary: light-dark(#455861, #b7c9cb);
-  --color-muted: light-dark(#60727a, #adc0c3);
-  --color-border: light-dark(#d9e1e0, #34484f);
-  --color-border-subtle: light-dark(#e8edeb, #293b43);
-  --color-surface: light-dark(#f2f4f1, #1d2d33);
-  --color-brand: light-dark(#173d4c, #9bcfd2);
-  --color-brand-hover: light-dark(#246477, #c0e6e5);
+  --color-bg: light-dark(#f3f4f2, #10191e);
+  --color-bg-subtle: light-dark(#eceeeb, #172329);
+  --color-text: light-dark(#22292d, #edf3f2);
+  --color-text-secondary: light-dark(#45545b, #b7c9cb);
+  --color-muted: light-dark(#56646b, #adc0c3);
+  --color-border: light-dark(#d8dedc, #34484f);
+  --color-border-subtle: light-dark(#e1e5e2, #293b43);
+  --color-surface: light-dark(#ffffff, #1d2d33);
+  --color-brand: light-dark(#36515b, #9bcfd2);
+  --color-brand-hover: light-dark(#233f49, #c0e6e5);
   --color-on-brand: light-dark(#ffffff, #10212b);
-  --font-heading: "Source Serif 4", "Iowan Old Style", "Baskerville", "Palatino Linotype", Georgia, serif;
+  --font-heading: var(--font-editorial), "Iowan Old Style", "Baskerville", Georgia, serif;
   --font-weight-display: 600;
   --font-weight-heading: 600;
   --measure-reading: 68ch;
+  --font-optical-sizing: auto;
   --measure-lead: 62ch;
   --leading-body: 1.6;
+  --leading-relaxed: 1.6;
   --wide-width: 1320px;
   --content-width: 720px;
   --nav-height: 74px;
@@ -41,3 +43,18 @@ a:focus-visible, button:focus-visible, input:focus-visible {
   outline-offset: 3px;
 }
 ::selection { background: light-dark(#dbeaea, #315968); }
+
+/* Readable long-form editorial copy; controls and metadata stay sans-serif. */
+.article-content {
+  font-family: var(--font-editorial), Georgia, serif;
+  font-optical-sizing: auto;
+  font-size: clamp(1.125rem, 1.05rem + .25vw, 1.25rem);
+  line-height: 1.65;
+}
+.article-content :is(h2, h3, h4) {
+  font-family: var(--font-editorial), Georgia, serif;
+  font-optical-sizing: auto;
+}
+@media (max-width: 600px) {
+  .article-content { font-size: 1.125rem; line-height: 1.65; }
+}
