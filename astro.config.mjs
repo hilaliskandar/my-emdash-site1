@@ -34,7 +34,7 @@ export default defineConfig({
 		},
 		{
 			provider: fontProviders.google(),
-			name: "Inter",
+			name: "Source Sans 3",
 			cssVariable: "--font-body",
 			weights: [400, 500, 600, 700],
 			fallbacks: ["sans-serif"],
