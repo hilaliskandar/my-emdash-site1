@@ -11,6 +11,7 @@ import { Image, PortableText, WidgetArea } from "emdash/ui";
 import { Comments, CommentForm } from "emdash/ui/comments";
 import Base from "../../layouts/Base.astro";
 import PostCard from "../../components/PostCard.astro";
+import RmjFiscalFigures from "../../components/RmjFiscalFigures.astro";
 import TagCloud from "../../components/TagCloud.astro";
 import { getReadingTime } from "../../utils/reading-time";
 import { resolveBlogSiteIdentity } from "../../utils/site-identity";
@@ -68,6 +69,31 @@ const bylines = post.data.bylines ?? [];
 
 // Get reading time
 const readingTime = getReadingTime(post.data.content);
+const isRmjFiscal = slug === "financas-municipais-regiao-metropolitana-de-jundiai-2013-2025";
+const rmjSections: { blocks: unknown[]; figure?: "table" | "trajectory" | "itbi" }[] = [];
+if (isRmjFiscal && Array.isArray(post.data.content)) {
+  const blocks = post.data.content as Array<{style?:string;children?:Array<{text?:string}>}>;
+  let section: typeof blocks = [];
+  let current = "";
+  function closeSection() {
+    if (!section.length) return;
+    let figure: "table" | "trajectory" | "itbi" | undefined;
+    if (current.includes("Uma região, sete situações")) figure = "table";
+    else if (current.includes("Investimentos:")) figure = "trajectory";
+    else if (current.includes("IPTU e ITBI:")) figure = "itbi";
+    rmjSections.push({blocks:section,figure});
+    section=[];
+  }
+  for (const block of blocks) {
+    const t=(block.children??[]).map(v=>v.text??"").join("");
+    if (block.style==="h2") { closeSection();current=t; }
+    // The EmDash Markdown importer stored table rows as literal paragraphs.
+    if (current.includes("Uma região, sete situações") && /^\\|/.test(t.trim())) continue;
+    section.push(block);
+  }
+  closeSection();
+}
+
 
 // This post's tags are already hydrated onto the entry by getEmDashEntry —
 // no extra query needed.
@@ -231,7 +257,7 @@ const publishDate =
 				</header>
 
 				<div class="article-content">
-					<PortableText value={post.data.content} />
+					{isRmjFiscal ? rmjSections.map((section) => <><PortableText value={section.blocks as typeof post.data.content} />{section.figure && <RmjFiscalFigures kind={section.figure} />}</>) : <PortableText value={post.data.content} />}
 				</div>
 
 				<div class="article-comments">
