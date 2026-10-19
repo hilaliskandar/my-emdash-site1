@@ -88,7 +88,7 @@ if (isRmjFiscal && Array.isArray(post.data.content)) {
     const t=(block.children??[]).map(v=>v.text??"").join("");
     if (block.style==="h2") { closeSection();current=t; }
     // The EmDash Markdown importer stored table rows as literal paragraphs.
-    if (current.includes("Uma região, sete situações") && /^\\|/.test(t.trim())) continue;
+    if (current.includes("Uma região, sete situações") && /^\|/.test(t.trim())) continue;
     section.push(block);
   }
   closeSection();
