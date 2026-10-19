@@ -94,7 +94,7 @@ const isLoggedIn = !!Astro.locals.user;
 		<EmDashHead page={pageCtx} />
 		<script is:inline>
 			// Apply an explicit theme choice immediately to prevent flash.
-			// With no cookie, color-scheme: light dark follows the OS.
+			// With no cookie, use the light editorial palette by default.
 			(function () {
 				var row = document.cookie.split("; ").find(function (item) {
 					return item.startsWith("theme=");
@@ -102,6 +102,8 @@ const isLoggedIn = !!Astro.locals.user;
 				var theme = row ? row.slice(6) : null;
 				if (theme === "dark" || theme === "light") {
 					document.documentElement.classList.add(theme);
+				} else {
+					document.documentElement.classList.add("light");
 				}
 			})();
 		</script>
@@ -275,7 +277,7 @@ const isLoggedIn = !!Astro.locals.user;
 							type="button"
 							class="theme-btn"
 							data-theme="system"
-							aria-label="System theme"
+							aria-label="Aparência do sistema"
 						>
 							<svg
 								width="16"
@@ -322,6 +324,7 @@ const isLoggedIn = !!Astro.locals.user;
 				if (theme === "system") {
 					setCookie("theme", "");
 					root.classList.remove("light", "dark");
+					root.classList.add("light");
 				} else {
 					setCookie("theme", theme);
 					root.classList.remove("light", "dark");
@@ -397,7 +400,7 @@ const isLoggedIn = !!Astro.locals.user;
 				 * Design tokens live in src/styles/tokens.css. Colors are
 				 * defined with light-dark(); these rules pin the scheme when
 				 * the footer switcher sets an explicit choice. With no class,
-				 * color-scheme: light dark follows the OS preference. The
+				 * color-scheme: light is the default; dark remains an explicit choice. The
 				 * @supports guard keeps the toggle from forcing dark UA form
 				 * controls on browsers stuck on the plain-light fallback.
 				 */
