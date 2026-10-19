@@ -11,8 +11,7 @@
   --color-brand: light-dark(#36515b, #9bcfd2);
   --color-brand-hover: light-dark(#233f49, #c0e6e5);
   --color-on-brand: light-dark(#ffffff, #10212b);
-  --font-body: "Source Sans 3", "Segoe UI", Arial, sans-serif;
-  --font-heading: "Source Serif 4", "Iowan Old Style", "Baskerville", "Palatino Linotype", Georgia, serif;
+  --font-heading: var(--font-editorial), "Iowan Old Style", "Baskerville", Georgia, serif;
   --font-weight-display: 600;
   --font-weight-heading: 600;
   --measure-reading: 68ch;
