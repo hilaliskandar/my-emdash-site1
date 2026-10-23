@@ -58,3 +58,34 @@ a:focus-visible, button:focus-visible, input:focus-visible {
 @media (max-width: 600px) {
   .article-content { font-size: 1.125rem; line-height: 1.65; }
 }
+
+/* Public theme: pin the requested light editorial palette and font hierarchy.
+   Scoped to the public shell; EmDash administration retains its own styling. */
+:root:not(.dark) {
+  color-scheme: light;
+  --color-bg: #f3f4f2;
+  --color-bg-subtle: #eceeeb;
+  --color-text: #22292d;
+  --color-text-secondary: #45545b;
+  --color-muted: #56646b;
+  --color-border: #d8dedc;
+  --color-border-subtle: #e1e5e2;
+  --color-surface: #ffffff;
+  --color-brand: #36515b;
+  --color-brand-hover: #233f49;
+  --color-on-brand: #ffffff;
+}
+html:not(.dark) body {
+  background-color: #f3f4f2;
+  color: #22292d;
+}
+body {
+  font-family: var(--font-body), "Source Sans 3", Arial, sans-serif;
+}
+body :is(h1, h2, h3, h4, h5, h6),
+body .site-title, body .footer-logo {
+  font-family: var(--font-editorial), "Source Serif 4", Georgia, serif;
+}
+body .article-content {
+  font-family: var(--font-editorial), "Source Serif 4", Georgia, serif;
+}
