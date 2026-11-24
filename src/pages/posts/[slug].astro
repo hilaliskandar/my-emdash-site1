@@ -197,8 +197,9 @@ const publishDate =
 						)
 					}
 					<div class="meta-block">
-						<span class="meta-label">Visualizações registradas</span>
+						<span class="meta-label">Visualizações estimadas</span>
 						<span class="meta-value" id="article-view-count" aria-live="polite">—</span>
+						<small class="meta-value">Inclui acréscimo simulado de 100 a 200 por artigo; não equivale a acessos comprovados.</small>
 					</div>
 					<div class="meta-block">
 						<span class="meta-label">Tempo de leitura</span>
@@ -400,7 +401,7 @@ const publishDate =
 			}).catch(() => sessionStorage.removeItem(key));
 		}
 		recordView();
-		// Read only observed visits; estimates are intentionally not included.
+		// Display the labeled estimate while keeping recorded views separate.
 		async function loadArticleViews() {
 			const el = document.getElementById("article-view-count");
 			const slug = location.pathname.split("/").filter(Boolean).pop();
@@ -408,9 +409,9 @@ const publishDate =
 			try {
 				const response = await fetch("/_analytics/view?slug=" + encodeURIComponent(slug), { credentials: "same-origin" });
 				if (!response.ok) throw new Error("Count unavailable");
-				const data = await response.json() as { views?: number };
-				if (typeof data.views !== "number") throw new Error("Count invalid");
-				el.textContent = new Intl.NumberFormat("pt-BR").format(data.views);
+				const data = await response.json() as { views?: number; estimatedViews?: number; simulatedBaseline?: number };
+				if (typeof data.estimatedViews !== "number" || typeof data.simulatedBaseline !== "number") throw new Error("Estimate unavailable");
+				el.textContent = new Intl.NumberFormat("pt-BR").format(data.estimatedViews);
 			} catch {
 				el.textContent = "Indisponível";
 			}
