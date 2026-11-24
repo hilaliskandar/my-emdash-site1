@@ -188,7 +188,21 @@ async function recordArticleView(request: Request, env: RadarEnv): Promise<Respo
         "SELECT COALESCE(SUM(v.views), 0) AS views FROM ec_posts p LEFT JOIN radar_article_views v ON v.entry_id=p.id WHERE p.slug=? AND p.status='published' AND p.deleted_at IS NULL GROUP BY p.id"
       ).bind(slug).first<{ views: number }>();
       if (!row) return new Response(JSON.stringify({ error: "not_found" }), { status: 404, headers: publicHeaders });
-      return new Response(JSON.stringify({ views: Math.max(0, Number(row.views) || 0) }), { headers: publicHeaders });
+      const recordedViews = Math.max(0, Number(row.views) || 0);
+      // Reproducible per-article synthetic baseline, never written to D1.
+      // The API exposes observed and estimated figures separately.
+      let hash = 2166136261;
+      for (const char of slug) {
+        hash ^= char.charCodeAt(0);
+        hash = Math.imul(hash, 16777619);
+      }
+      const simulatedBaseline = 100 + ((hash >>> 0) % 101);
+      return new Response(JSON.stringify({
+        views: recordedViews,
+        simulatedBaseline,
+        estimatedViews: recordedViews + simulatedBaseline,
+        methodology: "observed_plus_simulated_baseline",
+      }), { headers: publicHeaders });
     } catch {
       return new Response(JSON.stringify({ error: "unavailable" }), { status: 503, headers: { ...publicHeaders, "Cache-Control": "no-store" } });
     }
