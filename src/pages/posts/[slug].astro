@@ -197,6 +197,10 @@ const publishDate =
 						)
 					}
 					<div class="meta-block">
+						<span class="meta-label">Visualizações registradas</span>
+						<span class="meta-value" id="article-view-count" aria-live="polite">—</span>
+					</div>
+					<div class="meta-block">
 						<span class="meta-label">Tempo de leitura</span>
 						<span class="meta-value">{readingTime} min</span>
 					</div>
@@ -396,6 +400,22 @@ const publishDate =
 			}).catch(() => sessionStorage.removeItem(key));
 		}
 		recordView();
+		// Read only observed visits; estimates are intentionally not included.
+		async function loadArticleViews() {
+			const el = document.getElementById("article-view-count");
+			const slug = location.pathname.split("/").filter(Boolean).pop();
+			if (!el || !slug) return;
+			try {
+				const response = await fetch("/_analytics/count?slug=" + encodeURIComponent(slug), { credentials: "same-origin" });
+				if (!response.ok) throw new Error("Count unavailable");
+				const data = await response.json() as { views?: number };
+				if (typeof data.views !== "number") throw new Error("Count invalid");
+				el.textContent = new Intl.NumberFormat("pt-BR").format(data.views);
+			} catch {
+				el.textContent = "Indisponível";
+			}
+		}
+		void loadArticleViews();
 	</script>
 </Base>
 
