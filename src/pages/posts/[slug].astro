@@ -406,7 +406,7 @@ const publishDate =
 			const slug = location.pathname.split("/").filter(Boolean).pop();
 			if (!el || !slug) return;
 			try {
-				const response = await fetch("/_analytics/count?slug=" + encodeURIComponent(slug), { credentials: "same-origin" });
+				const response = await fetch("/_analytics/view?slug=" + encodeURIComponent(slug), { credentials: "same-origin" });
 				if (!response.ok) throw new Error("Count unavailable");
 				const data = await response.json() as { views?: number };
 				if (typeof data.views !== "number") throw new Error("Count invalid");
