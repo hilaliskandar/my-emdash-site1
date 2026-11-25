@@ -20,5 +20,5 @@
 	],
 	// Sandboxed plugins require Worker Loader, available on Workers paid plans. Uncomment to enable:
 	// "worker_loaders": [{ "binding": "LOADER" }],
-	// Scheduled trigger disabled: account cron slots are full.
+	// EmDash scheduled publishing: Cloudflare Cron Trigger runs once per minute.\n\t"triggers": { "crons": ["* * * * *"] },
 }
